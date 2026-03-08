@@ -1,0 +1,23 @@
+{
+  "mgm-cafe": {
+    "restaurantName": "MGM Cafe",
+    "platforms": ["justeat"],
+    "shipday": {
+      "webhook_token": "MgmcafeShipdayToken2026",
+      "api_key": "tnCDKUXO0G.q4BdZIOEtoNgEMnXklHJ"
+    },
+    "justeat": {
+      "webhook_token": "JustEatToHubToken_mgm_2026",
+      "api_key": "JET_FLYT_API_KEY",
+      "application": "fleet-hub/1.0",
+      "restaurant_id": "123456"
+    },
+    "defaults": {
+      "restaurantName": "MGM CAFE",
+      "restaurantAddress": "rue du lac 14, 1007 lausanne",
+      "restaurantPhoneNumber": "+41789415042",
+      "pickupLatitude": 46.5197,
+      "pickupLongitude": 6.6323
+    }
+  }
+}
