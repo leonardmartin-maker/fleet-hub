@@ -12,12 +12,15 @@ from app.utils import (
     tenant_log_paths,
     jsonl_append,
 )
-
 from app.services.justeat import (
     map_shipday_to_jet_state,
     build_deliverystate_payload,
     put_deliverystate,
 )
+from app.repositories.events import EventRepository
+
+from app.services.retry_queue import enqueue_retry
+from app.repositories.events_pg import EventRepositoryPG
 
 router = APIRouter()
 
@@ -94,8 +97,37 @@ async def shipday_webhook_tenant(tenant_id: str, request: Request):
         },
     )
 
+    EventRepository.append(
+        tenant_id=tenant_id,
+        event_type="shipday.status.received",
+        order_id=order_id,
+        payload={
+            "eventId": event_id,
+            "normalizedStatus": normalized_status,
+            "driverId": driver_id,
+            "lat": lat,
+            "lng": lng,
+        },
+    )
+
+    EventRepositoryPG.append(
+        tenant_id=tenant_id,
+        event_type="shipday.status.received",
+        order_id=order_id,
+        payload={
+            "eventId": event_id,
+            "normalizedStatus": normalized_status,
+            "driverId": driver_id,
+            "lat": lat,
+            "lng": lng,
+        },
+    )
+
     if order_id:
-        jsonl_append(paths["justeat_drafts"], justeat_draft(normalized_status, order_id, driver_id, lat, lng, ts))
+        jsonl_append(
+            paths["justeat_drafts"],
+            justeat_draft(normalized_status, order_id, driver_id, lat, lng, ts),
+        )
 
     jet_state = map_shipday_to_jet_state(normalized_status)
     jet_result = None
@@ -128,6 +160,30 @@ async def shipday_webhook_tenant(tenant_id: str, request: Request):
                 "jetResult": jet_result,
             },
         )
+
+        EventRepository.append(
+            tenant_id=tenant_id,
+            event_type="justeat.status.sent" if jet_result["ok"] else "justeat.status.failed",
+            order_id=order_id,
+            payload={
+                "eventId": event_id,
+                "jetState": jet_state,
+                "jetResult": jet_result,
+            },
+        )
+
+        EventRepositoryPG.append(
+            tenant_id=tenant_id,
+            event_type="justeat.status.sent" if jet_result["ok"] else "justeat.status.failed",
+            order_id=order_id,
+            payload={
+                "eventId": event_id,
+                "jetState": jet_state,
+                "jetResult": jet_result,
+            },
+        )
+
+        enqueue_retry(order_id)
 
     return {
         "ok": True,

@@ -1,14 +1,18 @@
 from fastapi import APIRouter
 
 from app.storage import load_tenants
-from app.config import LOG_DIR
+from app.repositories.orders import OrderRepository
+from app.repositories.events import EventRepository
+from app.services.order_state import build_order_view
+from app.services.replay import replay_order
+from app.services.metrics import get_health, get_stats, get_retries
 
 router = APIRouter()
 
 
 @router.get("/health")
 def health():
-    return {"ok": True, "v": "3"}
+    return {"ok": True, "v": "4"}
 
 
 @router.get("/tenants")
@@ -34,41 +38,48 @@ def platform_restaurants():
 
     return {"restaurants": restaurants}
 
+@router.get("/platform/orders")
+def list_orders():
+    return {"orders": OrderRepository.list()}
+
+@router.get("/platform/orders/{order_id}")
+def order_view(order_id: str):
+
+    view = build_order_view(order_id)
+
+    if not view:
+        return {"error": "order_not_found"}
+
+    return view
+
+@router.get("/platform/events")
+def list_events():
+    return {"events": EventRepository.list()}
+
+
+@router.get("/platform/events/{tenant_id}")
+def list_events_by_tenant(tenant_id: str):
+    return {"events": EventRepository.list_by_tenant(tenant_id)}
+
+
+@router.get("/platform/events/order/{order_id}")
+def list_events_by_order(order_id: str):
+    return {"events": EventRepository.list_by_order(order_id)}
+
+@router.post("/platform/replay/{order_id}")
+async def replay_order_route(order_id: str):
+    return await replay_order(order_id)
+
+@router.get("/platform/health")
+def platform_health():
+    return get_health()
+
 
 @router.get("/platform/stats")
 def platform_stats():
-    tenants = load_tenants()
-    total_restaurants = len(tenants)
+    return get_stats()
 
-    total_shipday_events = 0
-    total_justeat_in = 0
-    total_shipday_create = 0
 
-    base = LOG_DIR / "tenants"
-    if base.exists():
-        for tenant_id in tenants.keys():
-            tenant_dir = base / tenant_id
-
-            for filename, bucket in (
-                ("shipday_events.jsonl", "shipday"),
-                ("justeat_in.jsonl", "justeat_in"),
-                ("shipday_create.jsonl", "shipday_create"),
-            ):
-                path = tenant_dir / filename
-                if path.exists():
-                    with path.open("r", encoding="utf-8") as f:
-                        count = sum(1 for _ in f)
-
-                    if bucket == "shipday":
-                        total_shipday_events += count
-                    elif bucket == "justeat_in":
-                        total_justeat_in += count
-                    elif bucket == "shipday_create":
-                        total_shipday_create += count
-
-    return {
-        "restaurants": total_restaurants,
-        "shipday_events": total_shipday_events,
-        "justeat_in": total_justeat_in,
-        "shipday_create": total_shipday_create,
-    }
+@router.get("/platform/retries")
+def platform_retries():
+    return get_retries()

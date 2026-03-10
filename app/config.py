@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 
-CONFIG_PATH = Path(os.getenv("TENANTS_JSON", "tenants.json"))
+CONFIG_PATH = Path(os.getenv("TENANTS_JSON", "data/tenants.json"))
 LOG_DIR = Path(os.getenv("LOG_DIR", "logs"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 

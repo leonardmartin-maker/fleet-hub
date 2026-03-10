@@ -1,0 +1,2 @@
+{"tenantId": "mgm-cafe", "sourcePlatform": "justeat", "sourceOrderId": "JE-9002", "shipdayOrderId": null, "createdAt": 1773155725, "status": "received"}
+{"sourceOrderId": "JE-9002", "shipdayOrderId": 44452502, "updatedAt": 1773155726, "status": "created", "eventType": "shipday.created"}
