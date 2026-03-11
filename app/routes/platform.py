@@ -67,6 +67,18 @@ def list_events_by_tenant(tenant_id: str):
 def list_events_by_order(order_id: str):
     return {"events": EventRepositoryPG.list_by_order(order_id)}
 
+@router.get("/platform/dispatch/orders")
+def dispatch_orders():
+
+    orders = OrderRepositoryPG.list()
+
+    waiting = [
+        o for o in orders
+        if o["status"] == "received"
+    ]
+
+    return {"orders": waiting}
+
 @router.post("/platform/replay/{order_id}")
 async def replay_order_route(order_id: str):
     return await replay_order(order_id)
