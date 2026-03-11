@@ -1,7 +1,7 @@
 import json
 from app.repositories.tenants_pg import TenantRepositoryPG
 
-with open("app/repositories/tenants.json") as f:
+with open("data/tenants.json") as f:
     tenants = json.load(f)
 
 for tenant_id, tenant in tenants.items():
