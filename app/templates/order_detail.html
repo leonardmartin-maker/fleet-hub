@@ -127,7 +127,29 @@
             <p><span class="label">Tenant</span> {{ order.tenantId }}</p>
             <p><span class="label">Platform</span> {{ order.platform }}</p>
             <p><span class="label">Status</span> {{ order.status }}</p>
-            <p><span class="label">Shipday Order ID</span> {{ order.shipdayOrderId }}</p>
+            <p>
+            <span class="label">Shipday Order ID</span>
+            {{ order.shipdayOrderId }}
+
+            {% if order.shipdayOrderId %}
+            <a
+            href="https://app.shipday.com/orders/{{ order.shipdayOrderId }}"
+            target="_blank"
+            style="
+            margin-left:12px;
+            background:#10b981;
+            color:white;
+            padding:6px 10px;
+            border-radius:6px;
+            text-decoration:none;
+            font-weight:bold;
+            font-size:13px;
+            "
+            >
+            Open in Shipday
+            </a>
+            {% endif %}
+            </p>
             <form action="/platform/replay/{{ order.orderId }}" method="post">
                 <button style="
                     margin-top:12px;
