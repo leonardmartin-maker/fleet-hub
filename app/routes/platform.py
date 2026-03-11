@@ -19,18 +19,18 @@ def health():
 @router.get("/tenants")
 def list_tenants():
     tenants = TenantRepositoryPG.list()
-    return {"tenants": sorted(list(tenants.keys()))}
+    return {"tenants": sorted([t.get("tenantId") for t in tenants if t.get("tenantId")])}
 
 
 @router.get("/platform/restaurants")
 def platform_restaurants():
     tenants = TenantRepositoryPG.list()
-    restaurants = []
 
-    for tenant_id, tenant in tenants.items():
+    restaurants = []
+    for tenant in tenants:
         restaurants.append(
             {
-                "tenantId": tenant_id,
+                "tenantId": tenant.get("tenantId"),
                 "restaurantName": tenant.get("restaurantName"),
                 "platforms": tenant.get("platforms", []),
                 "justeatRestaurantId": ((tenant.get("justeat") or {}).get("restaurant_id")),
