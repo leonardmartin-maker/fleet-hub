@@ -9,7 +9,9 @@ SHIPDAY_TOKEN = os.getenv("SHIPDAY_TOKEN")
 
 @router.get("/drivers")
 async def list_drivers():
+
     url = "https://api.shipday.com/drivers"
+
     headers = {
         "Authorization": f"Bearer {SHIPDAY_TOKEN}"
     }

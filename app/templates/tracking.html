@@ -1,122 +1,126 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fleet Hub Tracking</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<title>Fleet Hub Live Map</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-        }
+<link
+ rel="stylesheet"
+ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
 
-        header {
-            padding: 16px 20px;
-            border-bottom: 1px solid #ddd;
-        }
+<style>
 
-        h1 {
-            margin: 0;
-            font-size: 24px;
-        }
+body{
+font-family:Arial;
+margin:0;
+background:#f6f8fb;
+}
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+header{
+background:white;
+border-bottom:1px solid #ddd;
+padding:16px 24px;
+}
 
-        .nav a {
-            margin-left: 16px;
-            text-decoration: none;
-            color: #333;
-        }
+.title{
+font-size:22px;
+font-weight:bold;
+}
 
-        #map {
-            height: calc(100vh - 73px);
-            width: 100%;
-        }
-    </style>
+.nav a{
+margin-right:20px;
+text-decoration:none;
+color:#333;
+font-weight:bold;
+}
+
+#map{
+height:600px;
+}
+
+.container{
+padding:20px;
+}
+
+</style>
+
 </head>
+
 <body>
-    <header>
-        <div class="topbar">
-            <h1>Fleet Hub Tracking</h1>
-            <div class="nav">
-                <a href="/dashboard">Dashboard</a>
-            </div>
-        </div>
-    </header>
 
-    <div id="map"></div>
+<header>
 
-    <script>
-        var map = L.map('map').setView([46.52, 6.63], 11);
+<div class="title">Fleet Hub</div>
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'OpenStreetMap'
-        }).addTo(map);
+<div class="nav">
+<a href="/dashboard">Dashboard</a>
+<a href="/tracking">Live Map</a>
+</div>
 
-        var markers = [];
+</header>
 
-        async function loadDrivers() {
-            const res = await fetch("/tracking/drivers");
-            const data = await res.json();
+<div id="map"></div>
 
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-            data.drivers.forEach(d => {
-                var marker = L.marker([d.lat, d.lng]).addTo(map)
-                    .bindPopup(
-                        "Driver: " + (d.driverId || "unknown") +
-                        "<br>Order: " + (d.orderId || "unknown")
-                    );
+<script>
 
-                markers.push(marker);
-            });
-        }
+const map = L.map('map').setView([46.2044, 6.1432], 13)
 
-        loadDrivers();
-        setInterval(loadDrivers, 5000);
-    </script>
-    <h3>Orders waiting dispatch</h3>
-<div id="orders"></div>
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:19
+}).addTo(map)
 
-    <script>
+async function loadDrivers(){
 
-        async function loadOrders(){
+const r = await fetch("/drivers")
+const data = await r.json()
 
-            const r = await fetch("/platform/dispatch/orders")
-            const data = await r.json()
+if(!data.drivers) return
 
-            const container = document.getElementById("orders")
+data.drivers.forEach(driver => {
 
-            container.innerHTML = ""
+if(!driver.latitude) return
 
-            data.orders.forEach(o => {
+L.marker([driver.latitude,driver.longitude])
+.addTo(map)
+.bindPopup("Driver: "+driver.name)
 
-                const div = document.createElement("div")
+})
 
-                div.innerHTML = `
-                <b>${o.source_order_id}</b>
-                <button onclick="assignDriver('${o.source_order_id}')">
-                    Assign driver
-                </button>
-                `
+}
 
-                container.appendChild(div)
+async function loadOrders(){
 
-            })
+const r = await fetch("/platform/orders")
+const data = await r.json()
 
-        }
+if(!data.orders) return
 
-        loadOrders()
+data.orders.forEach(order => {
 
-    </script>
+if(!order.data) return
+
+const lat = order.data.latitude
+const lng = order.data.longitude
+
+if(!lat) return
+
+L.circleMarker([lat,lng],{
+radius:8,
+color:"red"
+}).addTo(map)
+.bindPopup("Order "+order.source_order_id)
+
+})
+
+}
+
+loadDrivers()
+loadOrders()
+
+</script>
+
 </body>
 </html>
