@@ -61,6 +61,33 @@
             border-top:1px solid #eee;
         }
 
+        .status{
+        padding:4px 8px;
+        border-radius:6px;
+        font-weight:bold;
+        font-size:13px;
+        }
+
+        .status-received{
+        background:#fef3c7;
+        color:#92400e;
+        }
+
+        .status-dispatched{
+        background:#dbeafe;
+        color:#1e40af;
+        }
+
+        .status-delivered{
+        background:#dcfce7;
+        color:#166534;
+        }
+
+        .status-failed{
+        background:#fee2e2;
+        color:#991b1b;
+        }
+
     </style>
 
 </head>
@@ -119,7 +146,11 @@
 <td>{{ o.tenant_id }}</td>
 <td>{{ o.source_platform }}</td>
 <td><a href="/order/{{ o.source_order_id }}">{{ o.source_order_id }}</a></td>
-<td>{{ o.status }}</td>
+<td>
+<span class="status status-{{ o.status }}">
+{{ o.status }}
+</span>
+</td>
 <td>{{ o.created_at }}</td>
 </tr>
 {% endfor %}
