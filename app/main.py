@@ -6,6 +6,7 @@ from app.routes.shipday import router as shipday_router
 from app.workers.retry_worker import retry_worker
 import asyncio
 from app.routes.dashboard import router as dashboard_router
+from app.routes.tracking import router as tracking_router
 
 app = FastAPI()
 
@@ -21,4 +22,5 @@ app.include_router(platform_router)
 app.include_router(justeat_router)
 app.include_router(shipday_router)
 app.include_router(dashboard_router)
+app.include_router(tracking_router)
 

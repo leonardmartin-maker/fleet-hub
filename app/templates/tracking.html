@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fleet Hub Tracking</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav a {
+            margin-left: 16px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        #map {
+            height: calc(100vh - 73px);
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="topbar">
+            <h1>Fleet Hub Tracking</h1>
+            <div class="nav">
+                <a href="/dashboard">Dashboard</a>
+            </div>
+        </div>
+    </header>
+
+    <div id="map"></div>
+
+    <script>
+        var map = L.map('map').setView([46.52, 6.63], 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'OpenStreetMap'
+        }).addTo(map);
+
+        var markers = [];
+
+        async function loadDrivers() {
+            const res = await fetch("/tracking/drivers");
+            const data = await res.json();
+
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            data.drivers.forEach(d => {
+                var marker = L.marker([d.lat, d.lng]).addTo(map)
+                    .bindPopup(
+                        "Driver: " + (d.driverId || "unknown") +
+                        "<br>Order: " + (d.orderId || "unknown")
+                    );
+
+                markers.push(marker);
+            });
+        }
+
+        loadDrivers();
+        setInterval(loadDrivers, 5000);
+    </script>
+</body>
+</html>
