@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 
 from app.storage import load_tenants
-from app.repositories.orders import OrderRepository
-from app.repositories.events import EventRepository
+from app.config import LOG_DIR
+from app.repositories.orders_pg import OrderRepositoryPG
+from app.repositories.events_pg import EventRepositoryPG
 from app.services.order_state import build_order_view
 from app.services.replay import replay_order
 from app.services.metrics import get_health, get_stats, get_retries
@@ -40,7 +41,7 @@ def platform_restaurants():
 
 @router.get("/platform/orders")
 def list_orders():
-    return {"orders": OrderRepository.list()}
+    return {"orders": OrderRepositoryPG.list()}
 
 @router.get("/platform/orders/{order_id}")
 def order_view(order_id: str):
@@ -54,17 +55,17 @@ def order_view(order_id: str):
 
 @router.get("/platform/events")
 def list_events():
-    return {"events": EventRepository.list()}
+    return {"events": EventRepositoryPG.list()}
 
 
 @router.get("/platform/events/{tenant_id}")
 def list_events_by_tenant(tenant_id: str):
-    return {"events": EventRepository.list_by_tenant(tenant_id)}
+    return {"events": EventRepositoryPG.list_by_tenant(tenant_id)}
 
 
 @router.get("/platform/events/order/{order_id}")
 def list_events_by_order(order_id: str):
-    return {"events": EventRepository.list_by_order(order_id)}
+    return {"events": EventRepositoryPG.list_by_order(order_id)}
 
 @router.post("/platform/replay/{order_id}")
 async def replay_order_route(order_id: str):
