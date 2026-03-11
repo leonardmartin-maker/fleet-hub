@@ -5,6 +5,7 @@ from app.routes.justeat import router as justeat_router
 from app.routes.shipday import router as shipday_router
 from app.workers.retry_worker import retry_worker
 import asyncio
+from app.routes.dashboard import router as dashboard_router
 
 app = FastAPI()
 
@@ -19,4 +20,5 @@ async def startup_event():
 app.include_router(platform_router)
 app.include_router(justeat_router)
 app.include_router(shipday_router)
+app.include_router(dashboard_router)
 

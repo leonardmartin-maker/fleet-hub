@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fleet Hub Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        th {
+            background: #f4f4f4;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Fleet Hub Dashboard</h1>
+
+<h2>Restaurants</h2>
+
+<table>
+<tr>
+<th>Tenant</th>
+<th>Restaurant</th>
+</tr>
+
+{% for t in tenants %}
+<tr>
+<td>{{ t.tenantId }}</td>
+<td>{{ t.restaurantName }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<h2>Orders</h2>
+
+<table>
+<tr>
+<th>ID</th>
+<th>Tenant</th>
+<th>Platform</th>
+<th>Order</th>
+<th>Status</th>
+<th>Created</th>
+</tr>
+
+{% for o in orders %}
+<tr>
+<td>{{ o.id }}</td>
+<td>{{ o.tenant_id }}</td>
+<td>{{ o.source_platform }}</td>
+<td>{{ o.source_order_id }}</td>
+<td>{{ o.status }}</td>
+<td>{{ o.created_at }}</td>
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>
