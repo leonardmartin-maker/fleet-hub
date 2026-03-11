@@ -41,19 +41,60 @@
             width:180px;
             display:inline-block;
         }
-        .timeline-item{
-            border-left:3px solid #d9dee7;
-            padding-left:14px;
-            margin-bottom:18px;
+        .timeline{
+            position:relative;
+            margin-top:10px;
         }
+
+        .timeline-item{
+            position:relative;
+            padding-left:28px;
+            margin-bottom:22px;
+        }
+
+        .timeline-item:before{
+            content:"";
+            position:absolute;
+            left:8px;
+            top:4px;
+            width:10px;
+            height:10px;
+            border-radius:50%;
+            background:#2563eb;
+        }
+
+        .timeline-item:after{
+            content:"";
+            position:absolute;
+            left:12px;
+            top:18px;
+            width:2px;
+            height:calc(100% + 8px);
+            background:#d9dee7;
+        }
+
+        .timeline-item:last-child:after{
+            display:none;
+        }
+
         .timeline-event{
             font-weight:bold;
             margin-bottom:4px;
         }
+
         .timeline-ts{
             color:#666;
             font-size:14px;
-            margin-bottom:6px;
+            margin-bottom:8px;
+        }
+
+        .timeline-payload{
+            background:#f3f4f6;
+            padding:10px 12px;
+            border-radius:6px;
+            font-size:13px;
+            white-space:pre-wrap;
+            word-break:break-word;
         }
         pre{
             white-space:pre-wrap;
@@ -106,13 +147,31 @@
         <div class="card">
             <h2>Timeline</h2>
 
-            {% for item in order.timeline %}
-                <div class="timeline-item">
-                    <div class="timeline-event">{{ item.event }}</div>
-                    <div class="timeline-ts">{{ item.ts }}</div>
-                    <pre>{{ item.payload }}</pre>
-                </div>
-            {% endfor %}
+            <div class="timeline">
+                {% for item in order.timeline %}
+                    <div class="timeline-item">
+                        <div class="timeline-event">
+                            {% if item.event == "justeat.order.received" %}
+                                Order received
+                            {% elif item.event == "shipday.order.create.requested" %}
+                                Sent to Shipday
+                            {% elif item.event == "shipday.order.created" %}
+                                Created in Shipday
+                            {% elif item.event == "shipday.status.received" %}
+                                Shipday status received
+                            {% elif item.event == "justeat.status.sent" %}
+                                Status sent to Just Eat
+                            {% elif item.event == "justeat.status.failed" %}
+                                Status failed to Just Eat
+                            {% else %}
+                                {{ item.event }}
+                            {% endif %}
+                        </div>
+                        <div class="timeline-ts">{{ item.ts }}</div>
+                        <div class="timeline-payload">{{ item.payload }}</div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
 </div>
