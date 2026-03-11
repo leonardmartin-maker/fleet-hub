@@ -8,6 +8,7 @@ import asyncio
 from app.routes.dashboard import router as dashboard_router
 from app.routes.tracking import router as tracking_router
 from app.routes.drivers import router as drivers_router
+from app.routes.dispatch import router as dispatch_router
 
 app = FastAPI()
 
@@ -25,3 +26,4 @@ app.include_router(shipday_router)
 app.include_router(dashboard_router)
 app.include_router(tracking_router)
 app.include_router(drivers_router)
+app.include_router(dispatch_router)
