@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.storage import load_tenants
+from app.repositories.tenants_pg import TenantRepositoryPG
 from app.config import LOG_DIR
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.repositories.events_pg import EventRepositoryPG
@@ -18,13 +18,13 @@ def health():
 
 @router.get("/tenants")
 def list_tenants():
-    tenants = load_tenants()
+    tenants = TenantRepositoryPG.list()
     return {"tenants": sorted(list(tenants.keys()))}
 
 
 @router.get("/platform/restaurants")
 def platform_restaurants():
-    tenants = load_tenants()
+    tenants = TenantRepositoryPG.list()
     restaurants = []
 
     for tenant_id, tenant in tenants.items():
