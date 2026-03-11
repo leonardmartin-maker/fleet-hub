@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order {{ order_id }}</title>
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            margin:0;
+            background:#f6f8fb;
+        }
+        header{
+            background:white;
+            border-bottom:1px solid #ddd;
+            padding:16px 24px;
+        }
+        .title{
+            font-size:22px;
+            font-weight:bold;
+        }
+        .nav{
+            margin-top:8px;
+        }
+        .nav a{
+            margin-right:20px;
+            text-decoration:none;
+            color:#333;
+            font-weight:bold;
+        }
+        .container{
+            padding:30px;
+        }
+        .card{
+            background:white;
+            padding:20px;
+            border-radius:8px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom:24px;
+        }
+        .label{
+            font-weight:bold;
+            width:180px;
+            display:inline-block;
+        }
+        .timeline-item{
+            border-left:3px solid #d9dee7;
+            padding-left:14px;
+            margin-bottom:18px;
+        }
+        .timeline-event{
+            font-weight:bold;
+            margin-bottom:4px;
+        }
+        .timeline-ts{
+            color:#666;
+            font-size:14px;
+            margin-bottom:6px;
+        }
+        pre{
+            white-space:pre-wrap;
+            word-break:break-word;
+            background:#f3f4f6;
+            padding:12px;
+            border-radius:6px;
+            font-size:13px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="title">Fleet Hub</div>
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/tracking">Live Map</a>
+    </div>
+</header>
+
+<div class="container">
+    {% if not order %}
+        <div class="card">
+            <h2>Order not found</h2>
+            <p>No data for order <strong>{{ order_id }}</strong>.</p>
+        </div>
+    {% else %}
+        <div class="card">
+            <h2>Order {{ order.orderId }}</h2>
+            <p><span class="label">Tenant</span> {{ order.tenantId }}</p>
+            <p><span class="label">Platform</span> {{ order.platform }}</p>
+            <p><span class="label">Status</span> {{ order.status }}</p>
+            <p><span class="label">Shipday Order ID</span> {{ order.shipdayOrderId }}</p>
+        </div>
+
+        <div class="card">
+            <h2>Timeline</h2>
+
+            {% for item in order.timeline %}
+                <div class="timeline-item">
+                    <div class="timeline-event">{{ item.event }}</div>
+                    <div class="timeline-ts">{{ item.ts }}</div>
+                    <pre>{{ item.payload }}</pre>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+</body>
+</html>
