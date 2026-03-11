@@ -178,21 +178,34 @@ async function loadOrders(){
 }
 
 async function suggestDriver(orderId){
-    const r = await fetch("/dispatch/suggest/" + orderId);
-    const data = await r.json();
 
-    if(!data.bestDriver){
-        alert("No driver available");
-        return;
-    }
+const r = await fetch("/dispatch/suggest/" + orderId)
+const data = await r.json()
 
-    alert(
-        "Suggested driver:\n" +
-        (data.bestDriver.name || data.bestDriver.id || "unknown") +
-        "\nDistance: " +
-        data.bestDriver.distanceKm +
-        " km"
-    );
+if(!data.bestDriver){
+alert("No driver available")
+return
+}
+
+const driver = data.bestDriver
+
+const confirmAssign = confirm(
+"Suggested driver:\n"+
+driver.name+
+"\nDistance: "+driver.distanceKm+" km\n\nAssign?"
+)
+
+if(!confirmAssign) return
+
+await fetch(
+"/dispatch/assign/"+orderId+"/"+driver.id,
+{
+method:"POST"
+}
+)
+
+alert("Driver assigned")
+
 }
 
 async function refreshAll(){
