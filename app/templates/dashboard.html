@@ -226,22 +226,55 @@
                 <th>Platform</th>
                 <th>Order</th>
                 <th>Status</th>
+                <th>Tracking</th>
                 <th>Created</th>
             </tr>
 
             {% for o in orders %}
             <tr>
-                <td>{{ o.id }}</td>
-                <td>{{ o.tenant_id }}</td>
-                <td>{{ o.source_platform }}</td>
-                <td><a href="/order/{{ o.source_order_id }}">{{ o.source_order_id }}</a></td>
-                <td>
-                    <span class="status status-{{ o.status }}">
-                        {{ o.status }}
-                    </span>
-                </td>
-                <td>{{ o.created_at }}</td>
-            </tr>
+    <td>{{ o.id }}</td>
+    <td>{{ o.tenant_id }}</td>
+    <td>{{ o.source_platform }}</td>
+    <td><a href="/order/{{ o.source_order_id }}">{{ o.source_order_id }}</a></td>
+    <td>
+        <span class="status status-{{ o.status }}">
+            {{ o.status }}
+        </span>
+    </td>
+    <td>
+        {% if o.shipday_tracking_url %}
+        <a
+            href="{{ o.shipday_tracking_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="
+                background:#10b981;
+                color:white;
+                padding:6px 10px;
+                border-radius:6px;
+                text-decoration:none;
+                font-weight:bold;
+                font-size:13px;
+                display:inline-block;
+            "
+        >
+            Track
+        </a>
+        {% else %}
+        <span style="
+            color:#667;
+            font-size:13px;
+            background:#f3f4f6;
+            padding:6px 10px;
+            border-radius:6px;
+            display:inline-block;
+        ">
+            N/A
+        </span>
+        {% endif %}
+    </td>
+    <td>{{ o.created_at }}</td>
+</tr>
             {% endfor %}
         </table>
     </div>
