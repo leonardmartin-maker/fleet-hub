@@ -87,6 +87,63 @@ def create_restaurant(
 
     return RedirectResponse(url="/dashboard", status_code=303)
 
+@router.get("/dashboard/restaurants/{tenant_id}/edit", response_class=HTMLResponse)
+def edit_restaurant(request: Request, tenant_id: str):
+
+    tenant = TenantRepositoryPG.get(tenant_id)
+
+    return templates.TemplateResponse(
+        "restaurant_edit.html",
+        {
+            "request": request,
+            "tenant": tenant,
+        },
+    )
+
+@router.post("/dashboard/restaurants/{tenant_id}/edit")
+async def update_restaurant(
+    tenant_id: str,
+    request: Request,
+    restaurant_name: str = Form(...),
+    justeat_restaurant_id: str = Form(...),
+    justeat_webhook_token: str = Form(...),
+    shipday_api_key: str = Form(""),
+    restaurant_address: str = Form(...),
+    restaurant_phone: str = Form(...)
+):
+
+    data = {
+        "justeat": {
+            "restaurant_id": justeat_restaurant_id,
+            "webhook_token": justeat_webhook_token,
+        },
+        "shipday": {},
+        "defaults": {
+            "restaurantName": restaurant_name,
+            "restaurantAddress": restaurant_address,
+            "restaurantPhoneNumber": restaurant_phone,
+        }
+    }
+
+    # on garde la clé existante si champ vide
+    existing = TenantRepositoryPG.get(tenant_id)
+
+    if shipday_api_key:
+        data["shipday"]["api_key"] = shipday_api_key
+    else:
+        data["shipday"]["api_key"] = existing["shipday"]["api_key"]
+
+    TenantRepositoryPG.upsert(
+        tenant_id,
+        restaurant_name,
+        data
+    )
+
+    return RedirectResponse(
+        url="/dashboard?success=restaurant_updated",
+        status_code=303
+    )
+
 
 @router.get("/order/{order_id}", response_class=HTMLResponse)
 def order_detail(request: Request, order_id: str):

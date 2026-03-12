@@ -223,13 +223,30 @@ Just Eat restaurant already connected
             <tr>
                 <th>Tenant</th>
                 <th>Restaurant</th>
+                <th>Actions</th>
             </tr>
 
             {% for t in tenants %}
             <tr>
-                <td>{{ t.tenantId }}</td>
-                <td>{{ t.restaurantName }}</td>
-            </tr>
+<td>{{ t.tenantId }}</td>
+<td>{{ t.restaurantName }}</td>
+
+<td>
+<a href="/dashboard/restaurants/{{ t.tenantId }}/edit"
+style="
+background:#2563eb;
+color:white;
+padding:6px 10px;
+border-radius:6px;
+text-decoration:none;
+font-size:13px;
+font-weight:bold;
+">
+Edit
+</a>
+</td>
+
+</tr>
             {% endfor %}
         </table>
     </div>

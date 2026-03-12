@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Edit Restaurant</title>
+</head>
+
+<body>
+
+<h2>Edit Restaurant {{ tenant.tenantId }}</h2>
+
+<form method="post">
+
+<label>Restaurant name</label><br>
+<input name="restaurant_name" value="{{ tenant.restaurantName }}"><br><br>
+
+<label>JustEat restaurant ID</label><br>
+<input name="justeat_restaurant_id" value="{{ tenant.justeat.restaurant_id }}"><br><br>
+
+<label>JustEat webhook token</label><br>
+<input name="justeat_webhook_token" value="{{ tenant.justeat.webhook_token }}"><br><br>
+
+<label>Shipday API key (leave blank to keep current)</label><br>
+<input name="shipday_api_key"><br><br>
+
+<label>Restaurant address</label><br>
+<input name="restaurant_address" value="{{ tenant.defaults.restaurantAddress }}"><br><br>
+
+<label>Restaurant phone</label><br>
+<input name="restaurant_phone" value="{{ tenant.defaults.restaurantPhoneNumber }}"><br><br>
+
+<button type="submit">Save</button>
+
+</form>
+
+</body>
+</html>
