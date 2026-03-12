@@ -12,8 +12,12 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
+
     tenants = TenantRepositoryPG.list()
     orders = OrderRepositoryPG.list()
+
+    error = request.query_params.get("error")
+    success = request.query_params.get("success")
 
     return templates.TemplateResponse(
         "dashboard.html",
@@ -21,6 +25,8 @@ def dashboard(request: Request):
             "request": request,
             "tenants": tenants,
             "orders": orders,
+            "error": error,
+            "success": success,
         },
     )
 
@@ -58,6 +64,20 @@ def create_restaurant(
         },
         "enabled": True,
     }
+
+    existing_tenant = TenantRepositoryPG.get(tenant_id)
+    if existing_tenant:
+        return RedirectResponse(
+            url="/dashboard?error=tenant_exists",
+            status_code=303
+        )
+
+    existing_jet = TenantRepositoryPG.find_by_justeat_restaurant_id(justeat_restaurant_id)
+    if existing_jet:
+        return RedirectResponse(
+            url="/dashboard?error=justeat_exists",
+            status_code=303
+        )
 
     TenantRepositoryPG.upsert(
         tenant_id=tenant_id,

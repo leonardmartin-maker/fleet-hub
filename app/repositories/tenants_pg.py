@@ -66,3 +66,27 @@ class TenantRepositoryPG:
                     """,
                     (tenant_id, restaurant_name, Json(data)),
                 )
+                
+    @staticmethod
+    def find_by_justeat_restaurant_id(justeat_restaurant_id: str) -> Optional[Dict[str, Any]]:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT tenant_id, restaurant_name, data
+                    FROM tenants
+                    WHERE data->'justeat'->>'restaurant_id' = %s
+                    LIMIT 1
+                    """,
+                    (justeat_restaurant_id,),
+                )
+                r = cur.fetchone()
+
+        if not r:
+            return None
+
+        tenant = r["data"] or {}
+        tenant["tenantId"] = r["tenant_id"]
+        tenant["restaurantName"] = r["restaurant_name"]
+
+        return tenant
