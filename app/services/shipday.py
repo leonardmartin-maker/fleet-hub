@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List
 from fastapi import HTTPException
 import httpx
@@ -28,9 +29,21 @@ def map_justeat_to_shipday(tenant: Dict[str, Any], payload: Dict[str, Any]) -> D
         or pick(payload, "customerAddress")
     )
 
-    restaurant_name = pick(restaurant, "name") or pick(payload, "restaurantName") or defaults.get("restaurantName")
-    restaurant_address = pick(restaurant, "address") or pick(payload, "restaurantAddress") or defaults.get("restaurantAddress")
-    restaurant_phone = pick(restaurant, "phone", "phoneNumber") or pick(payload, "restaurantPhoneNumber") or defaults.get("restaurantPhoneNumber")
+    restaurant_name = (
+        pick(restaurant, "name")
+        or pick(payload, "restaurantName")
+        or defaults.get("restaurantName")
+    )
+    restaurant_address = (
+        pick(restaurant, "address")
+        or pick(payload, "restaurantAddress")
+        or defaults.get("restaurantAddress")
+    )
+    restaurant_phone = (
+        pick(restaurant, "phone", "phoneNumber")
+        or pick(payload, "restaurantPhoneNumber")
+        or defaults.get("restaurantPhoneNumber")
+    )
 
     items = payload.get("items") or (payload.get("order") or {}).get("items") or []
     order_items = []
@@ -40,9 +53,11 @@ def map_justeat_to_shipday(tenant: Dict[str, Any], payload: Dict[str, Any]) -> D
         for item in items:
             if not isinstance(item, dict):
                 continue
+
             name = pick(item, "name", "title") or "Item"
             qty = pick(item, "quantity", "qty") or 1
             price = pick(item, "price", "unitPrice", "amount")
+
             try:
                 qty = int(qty)
             except Exception:
@@ -77,7 +92,13 @@ def map_justeat_to_shipday(tenant: Dict[str, Any], payload: Dict[str, Any]) -> D
 
     require_fields(
         shipday_payload,
-        ["customerName", "customerAddress", "customerPhoneNumber", "restaurantName", "restaurantAddress"],
+        [
+            "customerName",
+            "customerAddress",
+            "customerPhoneNumber",
+            "restaurantName",
+            "restaurantAddress",
+        ],
     )
 
     return shipday_payload
@@ -102,3 +123,55 @@ async def create_order(shipday_api_key: str, body: Dict[str, Any]) -> Dict[str, 
             "status": response.status_code,
             "response": data,
         }
+
+
+async def get_order_details(shipday_api_key: str, order_number: str) -> Dict[str, Any]:
+    headers = {
+        "Authorization": f"Basic {shipday_api_key}",
+        "Accept": "application/json",
+    }
+    timeout = httpx.Timeout(15.0, connect=10.0)
+
+    url = f"{SHIPDAY_ORDERS_URL}/{order_number}"
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        response = await client.get(url, headers=headers)
+        try:
+            data = response.json()
+        except Exception:
+            data = {"raw": response.text}
+
+        return {
+            "ok": response.status_code < 400,
+            "status": response.status_code,
+            "response": data,
+        }
+
+
+def extract_tracking_fields_from_order_details(response: Any) -> Dict[str, Any]:
+    order: Dict[str, Any]
+
+    if isinstance(response, list) and response:
+        first = response[0]
+        order = first if isinstance(first, dict) else {}
+    elif isinstance(response, dict):
+        order = response
+    else:
+        order = {}
+
+    tracking_url = (
+        order.get("trackingLink")
+        or order.get("trackingUrl")
+        or order.get("trackingPageUrl")
+    )
+
+    tracking_id = None
+    if tracking_url:
+        match = re.search(r"/trackingPage/([^?&]+)", tracking_url)
+        if match:
+            tracking_id = match.group(1)
+
+    return {
+        "tracking_url": tracking_url,
+        "tracking_id": tracking_id,
+    }

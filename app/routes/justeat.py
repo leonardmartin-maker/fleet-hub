@@ -10,9 +10,12 @@ from app.utils import (
     tenant_log_paths,
     jsonl_append,
 )
-from app.services.shipday import map_justeat_to_shipday, create_order
-from app.repositories.orders import OrderRepository
-from app.repositories.events import EventRepository
+from app.services.shipday import (
+    map_justeat_to_shipday,
+    create_order,
+    get_order_details,
+    extract_tracking_fields_from_order_details,
+)
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.repositories.events_pg import EventRepositoryPG
 
@@ -45,28 +48,10 @@ async def justeat_webhook(request: Request):
     if not order_id:
         raise HTTPException(status_code=422, detail="Missing orderId")
 
-    # Order registry: crée l'entrée logique si elle n'existe pas encore
-    OrderRepository.create(
-        tenant_id=tenant_id,
-        platform="justeat",
-        source_order_id=order_id,
-    )
-
     OrderRepositoryPG.create(
         tenant_id=tenant_id,
         platform="justeat",
         source_order_id=order_id,
-    )
-
-    # Event store: commande Just Eat reçue
-    EventRepository.append(
-        tenant_id=tenant_id,
-        event_type="justeat.order.received",
-        order_id=order_id,
-        payload={
-            "restaurantId": restaurant_id,
-            "eventId": event_id,
-        },
     )
 
     EventRepositoryPG.append(
@@ -79,7 +64,6 @@ async def justeat_webhook(request: Request):
         },
     )
 
-    # Log brut entrant
     jsonl_append(
         paths["justeat_in"],
         {
@@ -102,8 +86,7 @@ async def justeat_webhook(request: Request):
 
     shipday_body = map_justeat_to_shipday(tenant, payload)
 
-    # Event store: création Shipday demandée
-    EventRepository.append(
+    EventRepositoryPG.append(
         tenant_id=tenant_id,
         event_type="shipday.order.create.requested",
         order_id=order_id,
@@ -116,10 +99,6 @@ async def justeat_webhook(request: Request):
 
     result = await create_order(shipday_api_key, shipday_body)
 
-    import json
-    print("SHIPDAY RESULT =", json.dumps(result, indent=2, ensure_ascii=False))
-
-    # Log brut création Shipday
     jsonl_append(
         paths["shipday_create"],
         {
@@ -133,43 +112,8 @@ async def justeat_webhook(request: Request):
         },
     )
 
-    # Succès Shipday
-    if result["ok"] and result["response"].get("success", False):
-        shipday_order_id = result["response"].get("orderId")
-
-        OrderRepository.mark_shipday_created(
-            source_order_id=order_id,
-            shipday_order_id=shipday_order_id,
-        )
-
-        OrderRepositoryPG.mark_shipday_created(
-            source_order_id=order_id,
-            shipday_order_id=shipday_order_id,
-        )
-
-        EventRepository.append(
-            tenant_id=tenant_id,
-            event_type="shipday.order.created",
-            order_id=order_id,
-            payload={
-                "eventId": event_id,
-                "shipdayOrderId": shipday_order_id,
-            },
-        )
-
-        EventRepositoryPG.append(
-            tenant_id=tenant_id,
-            event_type="shipday.order.created",
-            order_id=order_id,
-            payload={
-                "eventId": event_id,
-                "shipdayOrderId": shipday_order_id,
-            },
-        )
-
-    # Échec Shipday
     if not result["ok"] or not result["response"].get("success", False):
-        EventRepository.append(
+        EventRepositoryPG.append(
             tenant_id=tenant_id,
             event_type="shipday.order.create.failed",
             order_id=order_id,
@@ -187,11 +131,56 @@ async def justeat_webhook(request: Request):
             },
         )
 
+    shipday_response = result["response"]
+    shipday_order_id = shipday_response.get("orderId")
+
+    shipday_tracking_url = None
+    shipday_tracking_id = None
+    details = None
+
+    try:
+        details = await get_order_details(shipday_api_key, order_id)
+
+        if details["ok"]:
+            tracking = extract_tracking_fields_from_order_details(details["response"])
+            shipday_tracking_url = tracking["tracking_url"]
+            shipday_tracking_id = tracking["tracking_id"]
+    except Exception as exc:
+        details = {
+            "ok": False,
+            "status": 500,
+            "response": {"error": str(exc)},
+        }
+
+    OrderRepositoryPG.mark_shipday_created(
+        source_order_id=order_id,
+        shipday_order_id=shipday_order_id,
+        shipday_tracking_url=shipday_tracking_url,
+        shipday_tracking_id=shipday_tracking_id,
+    )
+
+    EventRepositoryPG.append(
+        tenant_id=tenant_id,
+        event_type="shipday.order.created",
+        order_id=order_id,
+        payload={
+            "eventId": event_id,
+            "shipdayOrderId": shipday_order_id,
+            "shipdayTrackingUrl": shipday_tracking_url,
+            "shipdayTrackingId": shipday_tracking_id,
+            "shipdayDetails": details,
+        },
+    )
+
     return {
         "ok": True,
         "tenantId": tenant_id,
         "restaurantId": restaurant_id,
         "eventId": event_id,
         "orderId": order_id,
+        "shipdayOrderId": shipday_order_id,
+        "shipdayTrackingUrl": shipday_tracking_url,
+        "shipdayTrackingId": shipday_tracking_id,
         "shipday": result,
+        "shipdayDetails": details,
     }

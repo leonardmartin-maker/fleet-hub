@@ -20,18 +20,30 @@ class OrderRepositoryPG:
                 return cur.fetchone()
 
     @staticmethod
-    def mark_shipday_created(source_order_id: str, shipday_order_id: Any) -> Optional[Dict[str, Any]]:
+    def mark_shipday_created(
+        source_order_id: str,
+        shipday_order_id: Any,
+        shipday_tracking_url: Optional[str] = None,
+        shipday_tracking_id: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
                     UPDATE orders
                     SET shipday_order_id = %s,
+                        shipday_tracking_url = %s,
+                        shipday_tracking_id = %s,
                         status = 'created'
                     WHERE source_order_id = %s
                     RETURNING *
                     """,
-                    (str(shipday_order_id), source_order_id),
+                    (
+                        str(shipday_order_id),
+                        shipday_tracking_url,
+                        shipday_tracking_id,
+                        source_order_id,
+                    ),
                 )
                 return cur.fetchone()
 
