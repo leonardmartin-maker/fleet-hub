@@ -41,7 +41,26 @@ def platform_restaurants():
 
 @router.get("/platform/orders")
 def list_orders():
-    return {"orders": OrderRepositoryPG.list()}
+    raw_orders = OrderRepositoryPG.list()
+    orders = []
+
+    for o in raw_orders:
+        orders.append(
+            {
+                "id": o.get("id"),
+                "tenant_id": o.get("tenant_id"),
+                "source_platform": o.get("source_platform"),
+                "source_order_id": o.get("source_order_id"),
+                "shipday_order_id": o.get("shipday_order_id"),
+                "shipday_tracking_url": o.get("shipday_tracking_url"),
+                "shipday_tracking_id": o.get("shipday_tracking_id"),
+                "status": o.get("status"),
+                "data": o.get("data"),
+                "created_at": o.get("created_at"),
+            }
+        )
+
+    return {"orders": orders}
 
 @router.get("/platform/orders/{order_id}")
 def order_view(order_id: str):

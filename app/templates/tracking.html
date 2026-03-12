@@ -146,16 +146,47 @@ async function loadOrders(){
         row.className = "order-row";
 
         row.innerHTML = `
-            <div>
-                <strong>${order.source_order_id}</strong>
-                <div>Status: ${order.status || "unknown"}</div>
-            </div>
-            <div>
-                <button onclick="suggestDriver('${order.source_order_id}')">
-                    Suggest driver
-                </button>
-            </div>
-        `;
+    <div>
+        <strong>${order.source_order_id}</strong>
+        <div>Tenant: ${order.tenant_id || "-"}</div>
+        <div>Status: ${order.status || "unknown"}</div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        ${order.shipday_tracking_url ? `
+            <a
+                href="${order.shipday_tracking_url}"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="
+                    background:#10b981;
+                    color:white;
+                    padding:8px 10px;
+                    border-radius:6px;
+                    text-decoration:none;
+                    font-weight:bold;
+                    font-size:13px;
+                    display:inline-block;
+                "
+            >
+                Track
+            </a>
+        ` : `
+            <span style="
+                color:#666;
+                font-size:13px;
+                background:#f3f4f6;
+                padding:8px 10px;
+                border-radius:6px;
+                display:inline-block;
+            ">
+                No track
+            </span>
+        `}
+        <button onclick="suggestDriver('${order.source_order_id}')">
+            Suggest driver
+        </button>
+    </div>
+`;
 
         container.appendChild(row);
 
@@ -169,7 +200,18 @@ async function loadOrders(){
                     color: "red"
                 })
                 .addTo(map)
-                .bindPopup("Order " + order.source_order_id);
+                .bindPopup(`
+    <div style="min-width:180px">
+        <strong>Order ${order.source_order_id}</strong><br>
+        Tenant: ${order.tenant_id || "-"}<br>
+        Status: ${order.status || "unknown"}<br>
+        ${
+            order.shipday_tracking_url
+            ? `<a href="${order.shipday_tracking_url}" target="_blank" rel="noopener noreferrer">Track</a>`
+            : `No tracking`
+        }
+    </div>
+`);
 
                 orderMarkers.push(marker);
             }
