@@ -108,6 +108,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 
 let driverMarkers = [];
 let orderMarkers = [];
+let allPoints = [];
 
 async function loadDrivers(){
     const r = await fetch("/drivers");
@@ -126,6 +127,7 @@ async function loadDrivers(){
             .bindPopup("Driver: " + (driver.name || driver.id || "unknown"));
 
         driverMarkers.push(marker);
+        allPoints.push([driver.latitude, driver.longitude]);
     });
 }
 
@@ -214,6 +216,7 @@ async function loadOrders(){
 `);
 
                 orderMarkers.push(marker);
+                allPoints.push([lat, lng]);
             }
         }
     });
@@ -251,8 +254,17 @@ alert("Driver assigned")
 }
 
 async function refreshAll(){
+    allPoints = [];
     await loadDrivers();
     await loadOrders();
+    fitMapToPoints();
+}
+
+function fitMapToPoints(){
+    if(!allPoints.length) return;
+
+    const bounds = L.latLngBounds(allPoints);
+    map.fitBounds(bounds, { padding: [40, 40] });
 }
 
 refreshAll();
