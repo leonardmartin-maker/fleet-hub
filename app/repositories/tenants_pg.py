@@ -91,7 +91,7 @@ class TenantRepositoryPG:
 
         return tenant
     
-        @staticmethod
+    @staticmethod
     def set_enabled(tenant_id: str, enabled: bool) -> None:
         tenant = TenantRepositoryPG.get(tenant_id)
         if not tenant:
