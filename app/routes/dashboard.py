@@ -38,6 +38,7 @@ def create_restaurant(
     justeat_restaurant_id: str = Form(...),
     justeat_webhook_token: str = Form(...),
     shipday_api_key: str = Form(...),
+    shipday_webhook_token: str = Form(""),
     restaurant_address: str = Form(...),
     restaurant_phone: str = Form(""),
 ):
@@ -49,6 +50,12 @@ def create_restaurant(
     restaurant_address = restaurant_address.strip()
     restaurant_phone = restaurant_phone.strip()
 
+    if shipday_api_key:
+        api_key = shipday_api_key
+    else:
+        api_key = existing["shipday"]["api_key"]
+
+
     data = {
         "justeat": {
             "restaurant_id": justeat_restaurant_id,
@@ -56,6 +63,7 @@ def create_restaurant(
         },
         "shipday": {
             "api_key": shipday_api_key,
+            "webhook_token": shipday_webhook_token,
         },
         "defaults": {
             "restaurantName": restaurant_name,

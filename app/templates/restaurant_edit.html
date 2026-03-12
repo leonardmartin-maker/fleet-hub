@@ -22,6 +22,9 @@
 <label>Shipday API key (leave blank to keep current)</label><br>
 <input name="shipday_api_key"><br><br>
 
+<label>Shipday webhook token</label><br>
+<input name="shipday_webhook_token" value="{{ tenant.shipday.webhook_token or '' }}"><br><br>
+
 <label>Restaurant address</label><br>
 <input name="restaurant_address" value="{{ tenant.defaults.restaurantAddress }}"><br><br>
 
