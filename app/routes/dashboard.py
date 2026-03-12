@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.repositories.orders_pg import OrderRepositoryPG
@@ -23,6 +23,49 @@ def dashboard(request: Request):
             "orders": orders,
         },
     )
+
+
+@router.post("/dashboard/restaurants/create")
+def create_restaurant(
+    tenant_id: str = Form(...),
+    restaurant_name: str = Form(...),
+    justeat_restaurant_id: str = Form(...),
+    justeat_webhook_token: str = Form(...),
+    shipday_api_key: str = Form(...),
+    restaurant_address: str = Form(...),
+    restaurant_phone: str = Form(""),
+):
+    tenant_id = tenant_id.strip().lower()
+    restaurant_name = restaurant_name.strip()
+    justeat_restaurant_id = justeat_restaurant_id.strip()
+    justeat_webhook_token = justeat_webhook_token.strip()
+    shipday_api_key = shipday_api_key.strip()
+    restaurant_address = restaurant_address.strip()
+    restaurant_phone = restaurant_phone.strip()
+
+    data = {
+        "justeat": {
+            "restaurant_id": justeat_restaurant_id,
+            "webhook_token": justeat_webhook_token,
+        },
+        "shipday": {
+            "api_key": shipday_api_key,
+        },
+        "defaults": {
+            "restaurantName": restaurant_name,
+            "restaurantAddress": restaurant_address,
+            "restaurantPhoneNumber": restaurant_phone,
+        },
+        "enabled": True,
+    }
+
+    TenantRepositoryPG.upsert(
+        tenant_id=tenant_id,
+        restaurant_name=restaurant_name,
+        data=data,
+    )
+
+    return RedirectResponse(url="/dashboard", status_code=303)
 
 
 @router.get("/order/{order_id}", response_class=HTMLResponse)

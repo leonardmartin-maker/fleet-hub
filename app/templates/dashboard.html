@@ -4,7 +4,6 @@
     <title>Fleet Hub Dashboard</title>
 
     <style>
-
         body{
             font-family: Arial, sans-serif;
             margin:0;
@@ -62,100 +61,190 @@
         }
 
         .status{
-        padding:4px 8px;
-        border-radius:6px;
-        font-weight:bold;
-        font-size:13px;
+            padding:4px 8px;
+            border-radius:6px;
+            font-weight:bold;
+            font-size:13px;
         }
 
         .status-received{
-        background:#fef3c7;
-        color:#92400e;
+            background:#fef3c7;
+            color:#92400e;
         }
 
         .status-dispatched{
-        background:#dbeafe;
-        color:#1e40af;
+            background:#dbeafe;
+            color:#1e40af;
         }
 
         .status-delivered{
-        background:#dcfce7;
-        color:#166534;
+            background:#dcfce7;
+            color:#166534;
         }
 
         .status-failed{
-        background:#fee2e2;
-        color:#991b1b;
+            background:#fee2e2;
+            color:#991b1b;
         }
 
+        .form-grid{
+            display:grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap:14px;
+            margin-top:16px;
+        }
+
+        .form-field label{
+            display:block;
+            font-size:13px;
+            font-weight:bold;
+            color:#374151;
+            margin-bottom:6px;
+        }
+
+        .form-field input{
+            width:100%;
+            box-sizing:border-box;
+            padding:10px 12px;
+            border:1px solid #d1d5db;
+            border-radius:6px;
+            font-size:14px;
+            background:white;
+        }
+
+        .form-actions{
+            margin-top:16px;
+        }
+
+        .btn{
+            background:#2563eb;
+            color:white;
+            border:none;
+            padding:10px 14px;
+            border-radius:6px;
+            cursor:pointer;
+            font-weight:bold;
+        }
+
+        .btn:hover{
+            opacity:0.95;
+        }
+
+        .muted{
+            color:#666;
+            font-size:14px;
+        }
     </style>
 
 </head>
 <body>
 
 <header>
-
-    <div class="title">
-        Fleet Hub
-    </div>
+    <div class="title">Fleet Hub</div>
 
     <div class="nav">
         <a href="/dashboard">Dashboard</a>
         <a href="/tracking">Live Map</a>
     </div>
-
 </header>
 
 <div class="container">
 
-<div class="card">
-<h2>Restaurants</h2>
+    <div class="card">
+        <h2>Add Restaurant</h2>
+        <p class="muted">Créer un tenant restaurant directement depuis le dashboard.</p>
 
-<table>
-<tr>
-<th>Tenant</th>
-<th>Restaurant</th>
-</tr>
+        <form action="/dashboard/restaurants/create" method="post">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="tenant_id">Tenant ID</label>
+                    <input id="tenant_id" type="text" name="tenant_id" placeholder="mgm-cafe" required>
+                </div>
 
-{% for t in tenants %}
-<tr>
-<td>{{ t.tenantId }}</td>
-<td>{{ t.restaurantName }}</td>
-</tr>
-{% endfor %}
-</table>
+                <div class="form-field">
+                    <label for="restaurant_name">Restaurant name</label>
+                    <input id="restaurant_name" type="text" name="restaurant_name" placeholder="MGM Café" required>
+                </div>
 
-</div>
+                <div class="form-field">
+                    <label for="justeat_restaurant_id">Just Eat restaurant ID</label>
+                    <input id="justeat_restaurant_id" type="text" name="justeat_restaurant_id" placeholder="123456" required>
+                </div>
 
-<div class="card">
-<h2>Orders</h2>
+                <div class="form-field">
+                    <label for="justeat_webhook_token">Just Eat webhook token</label>
+                    <input id="justeat_webhook_token" type="text" name="justeat_webhook_token" placeholder="JustEatToHubToken_xxx" required>
+                </div>
 
-<table>
-<tr>
-<th>ID</th>
-<th>Tenant</th>
-<th>Platform</th>
-<th>Order</th>
-<th>Status</th>
-<th>Created</th>
-</tr>
+                <div class="form-field">
+                    <label for="shipday_api_key">Shipday API key</label>
+                    <input id="shipday_api_key" type="text" name="shipday_api_key" placeholder="Shipday API key" required>
+                </div>
 
-{% for o in orders %}
-<tr>
-<td>{{ o.id }}</td>
-<td>{{ o.tenant_id }}</td>
-<td>{{ o.source_platform }}</td>
-<td><a href="/order/{{ o.source_order_id }}">{{ o.source_order_id }}</a></td>
-<td>
-<span class="status status-{{ o.status }}">
-{{ o.status }}
-</span>
-</td>
-<td>{{ o.created_at }}</td>
-</tr>
-{% endfor %}
-</table>
-</div>
+                <div class="form-field">
+                    <label for="restaurant_address">Restaurant address</label>
+                    <input id="restaurant_address" type="text" name="restaurant_address" placeholder="Rue du Lac 14, 1007 Lausanne" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="restaurant_phone">Restaurant phone</label>
+                    <input id="restaurant_phone" type="text" name="restaurant_phone" placeholder="+41789415042">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn" type="submit">Create Restaurant</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Restaurants</h2>
+
+        <table>
+            <tr>
+                <th>Tenant</th>
+                <th>Restaurant</th>
+            </tr>
+
+            {% for t in tenants %}
+            <tr>
+                <td>{{ t.tenantId }}</td>
+                <td>{{ t.restaurantName }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Orders</h2>
+
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Tenant</th>
+                <th>Platform</th>
+                <th>Order</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+
+            {% for o in orders %}
+            <tr>
+                <td>{{ o.id }}</td>
+                <td>{{ o.tenant_id }}</td>
+                <td>{{ o.source_platform }}</td>
+                <td><a href="/order/{{ o.source_order_id }}">{{ o.source_order_id }}</a></td>
+                <td>
+                    <span class="status status-{{ o.status }}">
+                        {{ o.status }}
+                    </span>
+                </td>
+                <td>{{ o.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 </div>
 
 </body>
