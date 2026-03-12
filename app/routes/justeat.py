@@ -116,6 +116,9 @@ async def justeat_webhook(request: Request):
 
     result = await create_order(shipday_api_key, shipday_body)
 
+    import json
+    print("SHIPDAY RESULT =", json.dumps(result, indent=2, ensure_ascii=False))
+
     # Log brut création Shipday
     jsonl_append(
         paths["shipday_create"],
