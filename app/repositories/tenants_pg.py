@@ -90,3 +90,32 @@ class TenantRepositoryPG:
         tenant["restaurantName"] = r["restaurant_name"]
 
         return tenant
+    
+        @staticmethod
+    def set_enabled(tenant_id: str, enabled: bool) -> None:
+        tenant = TenantRepositoryPG.get(tenant_id)
+        if not tenant:
+            return
+
+        data = tenant.copy()
+        data.pop("tenantId", None)
+        data.pop("restaurantName", None)
+        data["enabled"] = enabled
+
+        TenantRepositoryPG.upsert(
+            tenant_id=tenant_id,
+            restaurant_name=tenant["restaurantName"],
+            data=data,
+        )
+
+    @staticmethod
+    def delete(tenant_id: str) -> None:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    DELETE FROM tenants
+                    WHERE tenant_id = %s
+                    """,
+                    (tenant_id,),
+                )

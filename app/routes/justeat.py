@@ -39,6 +39,8 @@ async def justeat_webhook(request: Request):
         raise HTTPException(status_code=422, detail="Missing JustEat restaurant_id in payload")
 
     tenant_id, tenant = find_tenant_by_justeat_restaurant_id(restaurant_id)
+    if not tenant.get("enabled", True):
+        raise HTTPException(status_code=403, detail="Tenant disabled")
     require_justeat_token(tenant, request)
 
     paths = tenant_log_paths(tenant_id)

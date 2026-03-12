@@ -149,6 +149,17 @@
 </header>
 
 <div class="container">
+    {% if success == "restaurant_deleted" %}
+<div style="background:#dcfce7;color:#166534;padding:12px;border-radius:8px;margin-bottom:20px;">
+Restaurant deleted successfully
+</div>
+{% endif %}
+
+{% if error == "tenant_not_found" %}
+<div style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:8px;margin-bottom:20px;">
+Restaurant not found
+</div>
+{% endif %}
 
     {% if success == "restaurant_created" %}
 <div style="background:#dcfce7;color:#166534;padding:12px;border-radius:8px;margin-bottom:20px;">
@@ -228,29 +239,89 @@ Just Eat restaurant already connected
             <tr>
                 <th>Tenant</th>
                 <th>Restaurant</th>
+                <th>Enabled</th>
                 <th>Actions</th>
             </tr>
 
             {% for t in tenants %}
             <tr>
-<td>{{ t.tenantId }}</td>
-<td>{{ t.restaurantName }}</td>
+    <td>{{ t.tenantId }}</td>
+    <td>{{ t.restaurantName }}</td>
+    <td>
+        {% if t.enabled is not defined or t.enabled %}
+        <span style="
+            background:#dcfce7;
+            color:#166534;
+            padding:4px 8px;
+            border-radius:6px;
+            font-weight:bold;
+            font-size:13px;
+        ">
+            Active
+        </span>
+        {% else %}
+        <span style="
+            background:#fee2e2;
+            color:#991b1b;
+            padding:4px 8px;
+            border-radius:6px;
+            font-weight:bold;
+            font-size:13px;
+        ">
+            Disabled
+        </span>
+        {% endif %}
+    </td>
+    <td style="white-space:nowrap;">
+        <a href="/dashboard/restaurants/{{ t.tenantId }}/edit"
+           style="
+                background:#2563eb;
+                color:white;
+                padding:6px 10px;
+                border-radius:6px;
+                text-decoration:none;
+                font-size:13px;
+                font-weight:bold;
+                margin-right:8px;
+                display:inline-block;
+           ">
+            Edit
+        </a>
 
-<td>
-<a href="/dashboard/restaurants/{{ t.tenantId }}/edit"
-style="
-background:#2563eb;
-color:white;
-padding:6px 10px;
-border-radius:6px;
-text-decoration:none;
-font-size:13px;
-font-weight:bold;
-">
-Edit
-</a>
-</td>
+        <form action="/dashboard/restaurants/{{ t.tenantId }}/toggle" method="post" style="display:inline;">
+            <button type="submit"
+                style="
+                    background:#f59e0b;
+                    color:white;
+                    border:none;
+                    padding:6px 10px;
+                    border-radius:6px;
+                    cursor:pointer;
+                    font-size:13px;
+                    font-weight:bold;
+                    margin-right:8px;
+                ">
+                {% if t.enabled is not defined or t.enabled %}Disable{% else %}Enable{% endif %}
+            </button>
+        </form>
 
+        <form action="/dashboard/restaurants/{{ t.tenantId }}/delete" method="post" style="display:inline;"
+              onsubmit="return confirm('Delete restaurant {{ t.restaurantName }}?');">
+            <button type="submit"
+                style="
+                    background:#dc2626;
+                    color:white;
+                    border:none;
+                    padding:6px 10px;
+                    border-radius:6px;
+                    cursor:pointer;
+                    font-size:13px;
+                    font-weight:bold;
+                ">
+                Delete
+            </button>
+        </form>
+    </td>
 </tr>
             {% endfor %}
         </table>

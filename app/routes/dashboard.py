@@ -165,3 +165,25 @@ def order_detail(request: Request, order_id: str):
             "order_id": order_id,
         },
     )
+
+@router.post("/dashboard/restaurants/{tenant_id}/toggle")
+def toggle_restaurant(tenant_id: str):
+    tenant = TenantRepositoryPG.get(tenant_id)
+    if not tenant:
+        return RedirectResponse(url="/dashboard?error=tenant_not_found", status_code=303)
+
+    enabled = bool(tenant.get("enabled", True))
+    TenantRepositoryPG.set_enabled(tenant_id, not enabled)
+
+    return RedirectResponse(url="/dashboard?success=restaurant_updated", status_code=303)
+
+
+@router.post("/dashboard/restaurants/{tenant_id}/delete")
+def delete_restaurant(tenant_id: str):
+    tenant = TenantRepositoryPG.get(tenant_id)
+    if not tenant:
+        return RedirectResponse(url="/dashboard?error=tenant_not_found", status_code=303)
+
+    TenantRepositoryPG.delete(tenant_id)
+
+    return RedirectResponse(url="/dashboard?success=restaurant_deleted", status_code=303)
