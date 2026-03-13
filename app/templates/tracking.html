@@ -95,16 +95,37 @@
     <h2>Filters</h2>
     <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
         <div>
-            <label style="display:block; font-weight:bold; margin-bottom:6px;">Tenant</label>
-            <select id="tenantFilter" style="
-                padding:10px 12px;
-                border:1px solid #d1d5db;
-                border-radius:6px;
-                min-width:220px;
-            ">
-                <option value="">All tenants</option>
-            </select>
-        </div>
+    <label style="display:block; font-weight:bold; margin-bottom:6px;">Tenant</label>
+    <select id="tenantFilter" style="
+        padding:10px 12px;
+        border:1px solid #d1d5db;
+        border-radius:6px;
+        min-width:220px;
+    ">
+        <option value="">All tenants</option>
+    </select>
+</div>
+
+<div>
+    <label style="display:block; font-weight:bold; margin-bottom:6px;">Status</label>
+    <select id="statusFilter" style="
+        padding:10px 12px;
+        border:1px solid #d1d5db;
+        border-radius:6px;
+        min-width:220px;
+    ">
+        <option value="">All status</option>
+        <option value="received">received</option>
+        <option value="created">created</option>
+        <option value="driver_assigned">driver_assigned</option>
+        <option value="to_restaurant">to_restaurant</option>
+        <option value="at_restaurant">at_restaurant</option>
+        <option value="collected">collected</option>
+        <option value="to_customer">to_customer</option>
+        <option value="delivered">delivered</option>
+        <option value="cancelled">cancelled</option>
+    </select>
+</div>
     </div>
 </div>
     <div class="card">
@@ -164,11 +185,18 @@ async function loadOrders(){
     ordersCache = data.orders;
 
     const selectedTenant = getSelectedTenant();
+const selectedStatus = getSelectedStatus();
 
-    const filteredOrders = data.orders.filter(order => {
-        if (!selectedTenant) return true;
-        return (order.tenant_id || "") === selectedTenant;
-    });
+const filteredOrders = data.orders.filter(order => {
+
+    if (selectedTenant && (order.tenant_id || "") !== selectedTenant)
+        return false;
+
+    if (selectedStatus && (order.status || "") !== selectedStatus)
+        return false;
+
+    return true;
+});
 
     filteredOrders.forEach(order => {
         const row = document.createElement("div");
@@ -324,7 +352,16 @@ function getSelectedTenant(){
     return select ? select.value : "";
 }
 
+function getSelectedStatus(){
+    const select = document.getElementById("statusFilter");
+    return select ? select.value : "";
+}
+
 document.getElementById("tenantFilter").addEventListener("change", () => {
+    refreshAll();
+});
+
+document.getElementById("statusFilter").addEventListener("change", () => {
     refreshAll();
 });
 
