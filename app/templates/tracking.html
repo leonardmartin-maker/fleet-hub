@@ -149,6 +149,17 @@
     </div>
 
     <div class="card">
+    <h2>Live summary</h2>
+    <div id="liveSummary" style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div class="legend-badge" style="background:#111827;">Drivers: 0</div>
+        <div class="legend-badge" style="background:#2563eb;">Orders: 0</div>
+        <div class="legend-badge" style="background:orange;">received: 0</div>
+        <div class="legend-badge" style="background:purple;">in progress: 0</div>
+        <div class="legend-badge" style="background:green;">delivered: 0</div>
+    </div>
+</div>
+
+    <div class="card">
         <h2>Legend</h2>
         <div class="legend">
             <span class="legend-badge" style="background:orange;">received</span>
@@ -195,6 +206,8 @@ let allPoints = [];
 let restaurantsCache = [];
 let ordersCache = [];
 let dispatchLine = null;
+let driversCache = [];
+let filteredOrdersCache = [];
 
 function getStatusColor(status){
     switch(status){
@@ -224,7 +237,11 @@ async function loadDrivers(){
     driverMarkers.forEach(m => map.removeLayer(m));
     driverMarkers = [];
 
-    if(!data.drivers) return;
+    if(!data.drivers){
+    driversCache = [];
+    return;
+}
+    driversCache = data.drivers || [];
 
     data.drivers.forEach(driver => {
         if(!driver.latitude || !driver.longitude) return;
@@ -290,6 +307,9 @@ async function loadOrders(){
     filteredOrders.forEach(order => {
         const row = document.createElement("div");
         row.className = "order-row";
+
+    filteredOrdersCache = filteredOrders;
+updateLiveSummary();
 
         row.innerHTML = `
             <div>
@@ -519,6 +539,50 @@ function resetFilters(){
     refreshAll();
 }
 
+function updateLiveSummary(){
+    const container = document.getElementById("liveSummary");
+    if(!container) return;
+
+    const driversCount = driversCache.length;
+    const ordersCount = filteredOrdersCache.length;
+
+    let received = 0;
+    let inProgress = 0;
+    let delivered = 0;
+
+    filteredOrdersCache.forEach(order => {
+        const status = order.status || "";
+
+        if(status === "received" || status === "created"){
+            received += 1;
+            return;
+        }
+
+        if(
+            status === "driver_assigned" ||
+            status === "to_restaurant" ||
+            status === "at_restaurant" ||
+            status === "collected" ||
+            status === "to_customer"
+        ){
+            inProgress += 1;
+            return;
+        }
+
+        if(status === "delivered"){
+            delivered += 1;
+        }
+    });
+
+    container.innerHTML = `
+        <div class="legend-badge" style="background:#111827;">Drivers: ${driversCount}</div>
+        <div class="legend-badge" style="background:#2563eb;">Orders: ${ordersCount}</div>
+        <div class="legend-badge" style="background:orange;">received: ${received}</div>
+        <div class="legend-badge" style="background:purple;">in progress: ${inProgress}</div>
+        <div class="legend-badge" style="background:green;">delivered: ${delivered}</div>
+    `;
+}
+
 document.getElementById("tenantFilter").addEventListener("change", () => {
     refreshAll();
 });
@@ -531,6 +595,7 @@ async function init(){
     await loadTenantFilter();
     await refreshAll();
     setInterval(refreshAll, 10000);
+    updateLiveSummary();
 }
 
 init();
