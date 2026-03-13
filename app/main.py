@@ -9,6 +9,8 @@ from app.routes.dashboard import router as dashboard_router
 from app.routes.tracking import router as tracking_router
 from app.routes.drivers import router as drivers_router
 from app.routes.dispatch import router as dispatch_router
+from app.routes.shipday_client import router as shipday_client_router
+from app.routes.shipday_fleet import router as shipday_fleet_router
 
 app = FastAPI()
 
@@ -27,3 +29,5 @@ app.include_router(dashboard_router)
 app.include_router(tracking_router)
 app.include_router(drivers_router)
 app.include_router(dispatch_router)
+app.include_router(shipday_client_router)
+app.include_router(shipday_fleet_router)
