@@ -188,16 +188,23 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 
 const driverIcon = L.divIcon({
     className: '',
-    html: `<div style="
-        width:18px;
-        height:18px;
-        border-radius:50%;
-        background:#111827;
-        border:3px solid white;
-        box-shadow:0 1px 4px rgba(0,0,0,0.3);
-    "></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9]
+    html: `<div style="font-size:20px;">🚗</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+});
+
+const restaurantIcon = L.divIcon({
+    className: '',
+    html: `<div style="font-size:20px;">🏪</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+});
+
+const customerIcon = L.divIcon({
+    className: '',
+    html: `<div style="font-size:20px;">🏠</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
 });
 
 let driverMarkers = [];
@@ -276,7 +283,11 @@ async function loadOrders(){
     const container = document.getElementById("orders");
     container.innerHTML = "";
 
-    if(!data.orders) return;
+    if(!data.orders){
+        filteredOrdersCache = [];
+        updateLiveSummary();
+        return;
+    }
 
     ordersCache = data.orders;
 
@@ -288,6 +299,9 @@ async function loadOrders(){
         if (selectedStatus && (order.status || "") !== selectedStatus) return false;
         return true;
     });
+
+    filteredOrdersCache = filteredOrders;
+    updateLiveSummary();
 
     if(filteredOrders.length === 0){
         container.innerHTML = `
@@ -307,9 +321,6 @@ async function loadOrders(){
     filteredOrders.forEach(order => {
         const row = document.createElement("div");
         row.className = "order-row";
-
-    filteredOrdersCache = filteredOrders;
-updateLiveSummary();
 
         row.innerHTML = `
             <div>
@@ -366,23 +377,31 @@ updateLiveSummary();
         container.appendChild(row);
 
         if(order.data){
-            const lat = order.data.latitude || order.data.pickupLatitude || order.data.restaurantLatitude;
-            const lng = order.data.longitude || order.data.pickupLongitude || order.data.restaurantLongitude;
+            const restaurantLat =
+                order.data.pickupLatitude ||
+                order.data.restaurantLatitude ||
+                order.data.latitude;
 
-            if(lat && lng){
-                const marker = L.circleMarker([lat, lng], {
-                    radius: 9,
-                    color: "#ffffff",
-                    weight: 2,
-                    fillColor: getStatusColor(order.status),
-                    fillOpacity: 0.95
-                })
+            const restaurantLng =
+                order.data.pickupLongitude ||
+                order.data.restaurantLongitude ||
+                order.data.longitude;
+
+            const customerLat = order.data.customerLatitude;
+            const customerLng = order.data.customerLongitude;
+
+            if(restaurantLat && restaurantLng){
+                const restaurantMarker = L.marker(
+                    [restaurantLat, restaurantLng],
+                    { icon: restaurantIcon }
+                )
                 .addTo(map)
                 .bindPopup(`
                     <div style="min-width:200px; line-height:1.5;">
                         <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
-                            Order ${order.source_order_id}
+                            Restaurant
                         </div>
+                        <div>Order: ${order.source_order_id}</div>
                         <div>Tenant: ${order.tenant_id || "-"}</div>
                         <div>
                             Status:
@@ -397,7 +416,27 @@ updateLiveSummary();
                                 ${order.status || "unknown"}
                             </span>
                         </div>
-                        <div style="margin-top:8px;">
+                    </div>
+                `);
+
+                orderMarkers.push(restaurantMarker);
+                allPoints.push([restaurantLat, restaurantLng]);
+            }
+
+            if(customerLat && customerLng){
+                const customerMarker = L.marker(
+                    [customerLat, customerLng],
+                    { icon: customerIcon }
+                )
+                .addTo(map)
+                .bindPopup(`
+                    <div style="min-width:200px; line-height:1.5;">
+                        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
+                            Customer
+                        </div>
+                        <div>Order: ${order.source_order_id}</div>
+                        <div>Tenant: ${order.tenant_id || "-"}</div>
+                        <div>
                             ${
                                 order.shipday_tracking_url
                                 ? `<a href="${order.shipday_tracking_url}" target="_blank" rel="noopener noreferrer">Open tracking</a>`
@@ -407,8 +446,8 @@ updateLiveSummary();
                     </div>
                 `);
 
-                orderMarkers.push(marker);
-                allPoints.push([lat, lng]);
+                orderMarkers.push(customerMarker);
+                allPoints.push([customerLat, customerLng]);
             }
         }
     });
@@ -447,14 +486,14 @@ async function suggestDriver(orderId){
 
     if(order && order.data){
         const lat =
-            order.data.latitude ||
-            order.data.pickupLatitude ||
-            order.data.restaurantLatitude;
+    order.data.pickupLatitude ||
+    order.data.restaurantLatitude ||
+    order.data.latitude;
 
-        const lng =
-            order.data.longitude ||
-            order.data.pickupLongitude ||
-            order.data.restaurantLongitude;
+const lng =
+    order.data.pickupLongitude ||
+    order.data.restaurantLongitude ||
+    order.data.longitude;
 
         if(lat && lng && driver.latitude && driver.longitude){
             drawDispatchLine(
