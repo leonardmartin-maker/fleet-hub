@@ -19,12 +19,22 @@ from app.services.shipday import (
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.repositories.events_pg import EventRepositoryPG
 
+from fastapi.responses import JSONResponse
+
 router = APIRouter()
 
 
 def require_justeat_token(tenant: Dict[str, Any], request: Request) -> None:
     expected = ((tenant.get("justeat") or {}).get("webhook_token")) or ""
-    incoming = request.headers.get("x-hub-token") or request.headers.get("X-Hub-Token") or ""
+
+    incoming = (
+        request.headers.get("authorization")
+        or request.headers.get("Authorization")
+        or request.headers.get("x-hub-token")
+        or request.headers.get("X-Hub-Token")
+        or ""
+    )
+
     if expected and incoming != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -174,15 +184,16 @@ async def justeat_webhook(request: Request):
         },
     )
 
-    return {
-        "ok": True,
-        "tenantId": tenant_id,
-        "restaurantId": restaurant_id,
-        "eventId": event_id,
-        "orderId": order_id,
-        "shipdayOrderId": shipday_order_id,
-        "shipdayTrackingUrl": shipday_tracking_url,
-        "shipdayTrackingId": shipday_tracking_id,
-        "shipday": result,
-        "shipdayDetails": details,
-    }
+    return JSONResponse(
+        status_code=202,
+        content={
+            "accepted": True,
+            "tenantId": tenant_id,
+            "restaurantId": restaurant_id,
+            "eventId": event_id,
+            "orderId": order_id,
+            "shipdayOrderId": shipday_order_id,
+            "shipdayTrackingUrl": shipday_tracking_url,
+            "shipdayTrackingId": shipday_tracking_id,
+        },
+    )
