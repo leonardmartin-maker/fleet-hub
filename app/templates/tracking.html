@@ -34,7 +34,7 @@
         }
 
         #map{
-            height:600px;
+            height:70vh;
         }
 
         .container{
@@ -53,8 +53,9 @@
             display:flex;
             align-items:center;
             justify-content:space-between;
-            padding:10px 0;
+            padding:12px 0;
             border-bottom:1px solid #eee;
+            gap:16px;
         }
 
         .order-row:last-child{
@@ -74,6 +75,20 @@
         button:hover{
             background:#1d4ed8;
         }
+
+        .legend{
+            display:flex;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+
+        .legend-badge{
+            color:white;
+            padding:6px 10px;
+            border-radius:999px;
+            font-weight:bold;
+            font-size:13px;
+        }
     </style>
 </head>
 
@@ -92,42 +107,59 @@
 
 <div class="container">
     <div class="card">
-    <h2>Filters</h2>
-    <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
-        <div>
-    <label style="display:block; font-weight:bold; margin-bottom:6px;">Tenant</label>
-    <select id="tenantFilter" style="
-        padding:10px 12px;
-        border:1px solid #d1d5db;
-        border-radius:6px;
-        min-width:220px;
-    ">
-        <option value="">All tenants</option>
-    </select>
-</div>
+        <h2>Filters</h2>
+        <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+            <div>
+                <label style="display:block; font-weight:bold; margin-bottom:6px;">Tenant</label>
+                <select id="tenantFilter" style="
+                    padding:10px 12px;
+                    border:1px solid #d1d5db;
+                    border-radius:6px;
+                    min-width:220px;
+                ">
+                    <option value="">All tenants</option>
+                </select>
+            </div>
 
-<div>
-    <label style="display:block; font-weight:bold; margin-bottom:6px;">Status</label>
-    <select id="statusFilter" style="
-        padding:10px 12px;
-        border:1px solid #d1d5db;
-        border-radius:6px;
-        min-width:220px;
-    ">
-        <option value="">All status</option>
-        <option value="received">received</option>
-        <option value="created">created</option>
-        <option value="driver_assigned">driver_assigned</option>
-        <option value="to_restaurant">to_restaurant</option>
-        <option value="at_restaurant">at_restaurant</option>
-        <option value="collected">collected</option>
-        <option value="to_customer">to_customer</option>
-        <option value="delivered">delivered</option>
-        <option value="cancelled">cancelled</option>
-    </select>
-</div>
+            <div>
+                <label style="display:block; font-weight:bold; margin-bottom:6px;">Status</label>
+                <select id="statusFilter" style="
+                    padding:10px 12px;
+                    border:1px solid #d1d5db;
+                    border-radius:6px;
+                    min-width:220px;
+                ">
+                    <option value="">All status</option>
+                    <option value="received">received</option>
+                    <option value="created">created</option>
+                    <option value="driver_assigned">driver_assigned</option>
+                    <option value="to_restaurant">to_restaurant</option>
+                    <option value="at_restaurant">at_restaurant</option>
+                    <option value="collected">collected</option>
+                    <option value="to_customer">to_customer</option>
+                    <option value="delivered">delivered</option>
+                    <option value="cancelled">cancelled</option>
+                </select>
+            </div>
+
+            <div>
+                <button type="button" onclick="resetFilters()">Reset filters</button>
+            </div>
+        </div>
     </div>
-</div>
+
+    <div class="card">
+        <h2>Legend</h2>
+        <div class="legend">
+            <span class="legend-badge" style="background:orange;">received</span>
+            <span class="legend-badge" style="background:blue;">created</span>
+            <span class="legend-badge" style="background:purple;">in progress</span>
+            <span class="legend-badge" style="background:green;">delivered</span>
+            <span class="legend-badge" style="background:red;">cancelled</span>
+            <span class="legend-badge" style="background:gray;">unknown</span>
+        </div>
+    </div>
+
     <div class="card">
         <h2>Orders waiting dispatch</h2>
         <div id="orders"></div>
@@ -137,17 +169,53 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-const map = L.map('map').setView([46.2044, 6.1432], 13);
+const map = L.map('map').setView([46.2044, 6.1432], 10);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19
 }).addTo(map);
+
+const driverIcon = L.divIcon({
+    className: '',
+    html: `<div style="
+        width:18px;
+        height:18px;
+        border-radius:50%;
+        background:#111827;
+        border:3px solid white;
+        box-shadow:0 1px 4px rgba(0,0,0,0.3);
+    "></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+});
 
 let driverMarkers = [];
 let orderMarkers = [];
 let allPoints = [];
 let restaurantsCache = [];
 let ordersCache = [];
+let dispatchLine = null;
+
+function getStatusColor(status){
+    switch(status){
+        case "received":
+            return "orange";
+        case "created":
+            return "blue";
+        case "driver_assigned":
+        case "to_restaurant":
+        case "at_restaurant":
+        case "collected":
+        case "to_customer":
+            return "purple";
+        case "delivered":
+            return "green";
+        case "cancelled":
+            return "red";
+        default:
+            return "gray";
+    }
+}
 
 async function loadDrivers(){
     const r = await fetch("/drivers");
@@ -161,49 +229,24 @@ async function loadDrivers(){
     data.drivers.forEach(driver => {
         if(!driver.latitude || !driver.longitude) return;
 
-        const marker = L.marker([driver.latitude, driver.longitude])
-            .addTo(map)
-            .bindPopup("Driver: " + (driver.name || driver.id || "unknown"));
+        const marker = L.marker(
+            [driver.latitude, driver.longitude],
+            { icon: driverIcon }
+        )
+        .addTo(map)
+        .bindPopup(`
+            <div style="min-width:180px; line-height:1.5;">
+                <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
+                    Driver
+                </div>
+                <div>Name: ${driver.name || "unknown"}</div>
+                <div>ID: ${driver.id || "-"}</div>
+            </div>
+        `);
 
         driverMarkers.push(marker);
         allPoints.push([driver.latitude, driver.longitude]);
     });
-}
-
-function getStatusColor(status){
-
-    switch(status){
-
-        case "received":
-            return "orange";
-
-        case "created":
-            return "blue";
-
-        case "driver_assigned":
-            return "purple";
-
-        case "to_restaurant":
-            return "purple";
-
-        case "at_restaurant":
-            return "purple";
-
-        case "collected":
-            return "purple";
-
-        case "to_customer":
-            return "purple";
-
-        case "delivered":
-            return "green";
-
-        case "cancelled":
-            return "red";
-
-        default:
-            return "gray";
-    }
 }
 
 async function loadOrders(){
@@ -221,76 +264,84 @@ async function loadOrders(){
     ordersCache = data.orders;
 
     const selectedTenant = getSelectedTenant();
-const selectedStatus = getSelectedStatus();
+    const selectedStatus = getSelectedStatus();
 
-const filteredOrders = data.orders.filter(order => {
+    const filteredOrders = data.orders.filter(order => {
+        if (selectedTenant && (order.tenant_id || "") !== selectedTenant) return false;
+        if (selectedStatus && (order.status || "") !== selectedStatus) return false;
+        return true;
+    });
 
-    if (selectedTenant && (order.tenant_id || "") !== selectedTenant)
-        return false;
-
-    if (selectedStatus && (order.status || "") !== selectedStatus)
-        return false;
-
-    return true;
-});
+    if(filteredOrders.length === 0){
+        container.innerHTML = `
+            <div style="
+                color:#666;
+                background:#f9fafb;
+                border:1px dashed #d1d5db;
+                padding:16px;
+                border-radius:8px;
+            ">
+                No orders match the selected filters.
+            </div>
+        `;
+        return;
+    }
 
     filteredOrders.forEach(order => {
         const row = document.createElement("div");
         row.className = "order-row";
 
         row.innerHTML = `
-    <div>
-        <strong>${order.source_order_id}</strong>
-        <div>Tenant: ${order.tenant_id || "-"}</div>
-        <div>
-Status:
-<span style="
-    padding:4px 8px;
-    border-radius:6px;
-    font-weight:bold;
-    color:white;
-    background:${getStatusColor(order.status)};
-">
-${order.status || "unknown"}
-</span>
-</div>
-    </div>
-    <div style="display:flex; gap:8px; align-items:center;">
-        ${order.shipday_tracking_url ? `
-            <a
-                href="${order.shipday_tracking_url}"
-                target="_blank"
-                rel="noopener noreferrer"
-                style="
-                    background:#10b981;
-                    color:white;
-                    padding:8px 10px;
-                    border-radius:6px;
-                    text-decoration:none;
-                    font-weight:bold;
-                    font-size:13px;
-                    display:inline-block;
-                "
-            >
-                Track
-            </a>
-        ` : `
-            <span style="
-                color:#666;
-                font-size:13px;
-                background:#f3f4f6;
-                padding:8px 10px;
-                border-radius:6px;
-                display:inline-block;
-            ">
-                No track
-            </span>
-        `}
-        <button onclick="suggestDriver('${order.source_order_id}')">
-            Suggest driver
-        </button>
-    </div>
-`;
+            <div>
+                <strong style="font-size:15px;">${order.source_order_id}</strong>
+                <div style="color:#666; margin-top:4px;">Tenant: ${order.tenant_id || "-"}</div>
+                <div style="margin-top:6px;">
+                    <span style="
+                        padding:4px 8px;
+                        border-radius:999px;
+                        font-weight:bold;
+                        color:white;
+                        background:${getStatusColor(order.status)};
+                        font-size:12px;
+                    ">
+                        ${order.status || "unknown"}
+                    </span>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                ${order.shipday_tracking_url ? `
+                    <a
+                        href="${order.shipday_tracking_url}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="
+                            background:#10b981;
+                            color:white;
+                            padding:8px 10px;
+                            border-radius:6px;
+                            text-decoration:none;
+                            font-weight:bold;
+                            font-size:13px;
+                        "
+                    >
+                        Track
+                    </a>
+                ` : `
+                    <span style="
+                        color:#666;
+                        font-size:13px;
+                        background:#f3f4f6;
+                        padding:8px 10px;
+                        border-radius:6px;
+                    ">
+                        No track
+                    </span>
+                `}
+                <button onclick="suggestDriver('${order.source_order_id}')">
+                    Suggest driver
+                </button>
+            </div>
+        `;
 
         container.appendChild(row);
 
@@ -300,24 +351,41 @@ ${order.status || "unknown"}
 
             if(lat && lng){
                 const marker = L.circleMarker([lat, lng], {
-    radius: 9,
-    color: getStatusColor(order.status),
-    fillColor: getStatusColor(order.status),
-    fillOpacity: 0.9
-})
+                    radius: 9,
+                    color: "#ffffff",
+                    weight: 2,
+                    fillColor: getStatusColor(order.status),
+                    fillOpacity: 0.95
+                })
                 .addTo(map)
                 .bindPopup(`
-    <div style="min-width:180px">
-        <strong>Order ${order.source_order_id}</strong><br>
-        Tenant: ${order.tenant_id || "-"}<br>
-        Status: ${order.status || "unknown"}<br>
-        ${
-            order.shipday_tracking_url
-            ? `<a href="${order.shipday_tracking_url}" target="_blank" rel="noopener noreferrer">Track</a>`
-            : `No tracking`
-        }
-    </div>
-`);
+                    <div style="min-width:200px; line-height:1.5;">
+                        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
+                            Order ${order.source_order_id}
+                        </div>
+                        <div>Tenant: ${order.tenant_id || "-"}</div>
+                        <div>
+                            Status:
+                            <span style="
+                                padding:2px 6px;
+                                border-radius:999px;
+                                color:white;
+                                background:${getStatusColor(order.status)};
+                                font-size:12px;
+                                font-weight:bold;
+                            ">
+                                ${order.status || "unknown"}
+                            </span>
+                        </div>
+                        <div style="margin-top:8px;">
+                            ${
+                                order.shipday_tracking_url
+                                ? `<a href="${order.shipday_tracking_url}" target="_blank" rel="noopener noreferrer">Open tracking</a>`
+                                : `No tracking`
+                            }
+                        </div>
+                    </div>
+                `);
 
                 orderMarkers.push(marker);
                 allPoints.push([lat, lng]);
@@ -326,42 +394,74 @@ ${order.status || "unknown"}
     });
 }
 
+function drawDispatchLine(driverLat, driverLng, orderLat, orderLng){
+    if(dispatchLine){
+        map.removeLayer(dispatchLine);
+    }
+
+    dispatchLine = L.polyline(
+        [
+            [driverLat, driverLng],
+            [orderLat, orderLng]
+        ],
+        {
+            color: "#2563eb",
+            weight: 4,
+            opacity: 0.9,
+            dashArray: "8, 8"
+        }
+    ).addTo(map);
+}
+
 async function suggestDriver(orderId){
+    const r = await fetch("/dispatch/suggest/" + orderId);
+    const data = await r.json();
 
-const r = await fetch("/dispatch/suggest/" + orderId)
-const data = await r.json()
+    if(!data.bestDriver){
+        alert("No driver available");
+        return;
+    }
 
-if(!data.bestDriver){
-alert("No driver available")
-return
-}
+    const driver = data.bestDriver;
+    const order = ordersCache.find(o => o.source_order_id === orderId);
 
-const driver = data.bestDriver
+    if(order && order.data){
+        const lat =
+            order.data.latitude ||
+            order.data.pickupLatitude ||
+            order.data.restaurantLatitude;
 
-const confirmAssign = confirm(
-"Suggested driver:\n"+
-driver.name+
-"\nDistance: "+driver.distanceKm+" km\n\nAssign?"
-)
+        const lng =
+            order.data.longitude ||
+            order.data.pickupLongitude ||
+            order.data.restaurantLongitude;
 
-if(!confirmAssign) return
+        if(lat && lng && driver.latitude && driver.longitude){
+            drawDispatchLine(
+                driver.latitude,
+                driver.longitude,
+                lat,
+                lng
+            );
+        }
+    }
 
-await fetch(
-"/dispatch/assign/"+orderId+"/"+driver.id,
-{
-method:"POST"
-}
-)
+    const confirmAssign = confirm(
+        "Suggested driver:\n" +
+        (driver.name || "unknown") +
+        "\nDistance: " + driver.distanceKm + " km\n\nAssign?"
+    );
 
-alert("Driver assigned")
+    if(!confirmAssign) return;
 
-}
+    await fetch(
+        "/dispatch/assign/" + orderId + "/" + driver.id,
+        {
+            method:"POST"
+        }
+    );
 
-async function refreshAll(){
-    allPoints = [];
-    await loadDrivers();
-    await loadOrders();
-    fitMapToPoints();
+    alert("Driver assigned");
 }
 
 function fitMapToPoints(){
@@ -369,6 +469,13 @@ function fitMapToPoints(){
 
     const bounds = L.latLngBounds(allPoints);
     map.fitBounds(bounds, { padding: [40, 40] });
+}
+
+async function refreshAll(){
+    allPoints = [];
+    await loadDrivers();
+    await loadOrders();
+    fitMapToPoints();
 }
 
 async function loadTenantFilter(){
@@ -404,6 +511,12 @@ function getSelectedTenant(){
 function getSelectedStatus(){
     const select = document.getElementById("statusFilter");
     return select ? select.value : "";
+}
+
+function resetFilters(){
+    document.getElementById("tenantFilter").value = "";
+    document.getElementById("statusFilter").value = "";
+    refreshAll();
 }
 
 document.getElementById("tenantFilter").addEventListener("change", () => {
