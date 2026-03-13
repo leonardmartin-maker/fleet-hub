@@ -92,6 +92,22 @@
 
 <div class="container">
     <div class="card">
+    <h2>Filters</h2>
+    <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+        <div>
+            <label style="display:block; font-weight:bold; margin-bottom:6px;">Tenant</label>
+            <select id="tenantFilter" style="
+                padding:10px 12px;
+                border:1px solid #d1d5db;
+                border-radius:6px;
+                min-width:220px;
+            ">
+                <option value="">All tenants</option>
+            </select>
+        </div>
+    </div>
+</div>
+    <div class="card">
         <h2>Orders waiting dispatch</h2>
         <div id="orders"></div>
     </div>
@@ -109,6 +125,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 let driverMarkers = [];
 let orderMarkers = [];
 let allPoints = [];
+let restaurantsCache = [];
+let ordersCache = [];
 
 async function loadDrivers(){
     const r = await fetch("/drivers");
@@ -143,7 +161,16 @@ async function loadOrders(){
 
     if(!data.orders) return;
 
-    data.orders.forEach(order => {
+    ordersCache = data.orders;
+
+    const selectedTenant = getSelectedTenant();
+
+    const filteredOrders = data.orders.filter(order => {
+        if (!selectedTenant) return true;
+        return (order.tenant_id || "") === selectedTenant;
+    });
+
+    filteredOrders.forEach(order => {
         const row = document.createElement("div");
         row.className = "order-row";
 
@@ -267,8 +294,47 @@ function fitMapToPoints(){
     map.fitBounds(bounds, { padding: [40, 40] });
 }
 
-refreshAll();
-setInterval(refreshAll, 10000);
+async function loadTenantFilter(){
+    try {
+        const r = await fetch("/platform/restaurants");
+        const data = await r.json();
+
+        restaurantsCache = data.restaurants || [];
+
+        const select = document.getElementById("tenantFilter");
+        const current = select.value;
+
+        select.innerHTML = `<option value="">All tenants</option>`;
+
+        restaurantsCache.forEach(restaurant => {
+            const option = document.createElement("option");
+            option.value = restaurant.tenantId || "";
+            option.textContent = restaurant.tenantId || restaurant.restaurantName || "unknown";
+            select.appendChild(option);
+        });
+
+        select.value = current;
+    } catch (err) {
+        console.error("Failed to load tenant filter", err);
+    }
+}
+
+function getSelectedTenant(){
+    const select = document.getElementById("tenantFilter");
+    return select ? select.value : "";
+}
+
+document.getElementById("tenantFilter").addEventListener("change", () => {
+    refreshAll();
+});
+
+async function init(){
+    await loadTenantFilter();
+    await refreshAll();
+    setInterval(refreshAll, 10000);
+}
+
+init();
 </script>
 
 </body>
