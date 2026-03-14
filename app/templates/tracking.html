@@ -404,6 +404,8 @@ async function loadOrders(){
                         <div>Order: ${order.source_order_id}</div>
                         <div>Tenant: ${order.tenant_id || "-"}</div>
                         <div>
+                            Status: ${order.status || "unknown"}<br>
+Driver: ${order.driver_id || "not assigned"}
                             Status:
                             <span style="
                                 padding:2px 6px;

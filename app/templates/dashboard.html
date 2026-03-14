@@ -338,6 +338,7 @@ Just Eat restaurant already connected
                 <th>Order</th>
                 <th>Status</th>
                 <th>Tracking</th>
+                <th>Driver</th>
                 <th>Created</th>
             </tr>
 
@@ -352,6 +353,13 @@ Just Eat restaurant already connected
             {{ o.status }}
         </span>
     </td>
+    <td>
+{% if o.driver_id %}
+🚗 {{ o.driver_id }}
+{% else %}
+-
+{% endif %}
+</td>
     <td>
         {% if o.shipday_tracking_url %}
         <a
