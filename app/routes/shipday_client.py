@@ -109,9 +109,12 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
     except Exception:
         pass
 
+    raw_event = str(payload.get("event") or "").upper()
+    event_type = f"shipday.client.{raw_event.lower()}" if raw_event else "shipday.client.received"
+
     EventRepositoryPG.append(
         tenant_id=tenant_id,
-        event_type="shipday.client.received",
+        event_type=event_type,
         order_id=source_order_id,
         payload={
             "ts": ts,
