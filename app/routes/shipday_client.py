@@ -33,6 +33,8 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
     require_shipday_client_token(tenant, request)
 
     payload: Dict[str, Any] = await request.json()
+    import json
+    print("SHIPDAY CLIENT PAYLOAD =", json.dumps(payload, indent=2, ensure_ascii=False))
     ts = now_ts()
     event_id = stable_event_id(payload)
 
