@@ -241,38 +241,58 @@ function getStatusColor(status){
 }
 
 async function loadDrivers(){
-    const r = await fetch("/drivers");
+    const r = await fetch("/platform/orders");
     const data = await r.json();
 
     driverMarkers.forEach(m => map.removeLayer(m));
     driverMarkers = [];
-
-    if(!data.drivers){
     driversCache = [];
-    return;
-}
-    driversCache = data.drivers || [];
 
-    data.drivers.forEach(driver => {
-        if(!driver.latitude || !driver.longitude) return;
+    if(!data.orders) return;
+
+    const selectedTenant = getSelectedTenant();
+    const selectedStatus = getSelectedStatus();
+
+    const visibleOrders = data.orders.filter(order => {
+        if (selectedTenant && (order.tenant_id || "") !== selectedTenant) return false;
+        if (selectedStatus && (order.status || "") !== selectedStatus) return false;
+        return true;
+    });
+
+    const seenDrivers = new Set();
+
+    visibleOrders.forEach(order => {
+        if(!order.driver_id || !order.driver_lat || !order.driver_lng) return;
+
+        const key = `${order.driver_id}_${order.driver_lat}_${order.driver_lng}`;
+        if(seenDrivers.has(key)) return;
+        seenDrivers.add(key);
 
         const marker = L.marker(
-            [driver.latitude, driver.longitude],
+            [order.driver_lat, order.driver_lng],
             { icon: driverIcon }
         )
         .addTo(map)
         .bindPopup(`
-            <div style="min-width:180px; line-height:1.5;">
+            <div style="min-width:220px; line-height:1.5;">
                 <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
-                    Driver
+                    🚗 Driver ${order.driver_id}
                 </div>
-                <div>Name: ${driver.name || "unknown"}</div>
-                <div>ID: ${driver.id || "-"}</div>
+                <div>Order: ${order.source_order_id}</div>
+                <div>Tenant: ${order.tenant_id || "-"}</div>
+                <div>Status: ${order.status || "unknown"}</div>
             </div>
         `);
 
         driverMarkers.push(marker);
-        allPoints.push([driver.latitude, driver.longitude]);
+        driversCache.push({
+            id: order.driver_id,
+            latitude: order.driver_lat,
+            longitude: order.driver_lng,
+            order_id: order.source_order_id,
+            tenant_id: order.tenant_id,
+        });
+        allPoints.push([order.driver_lat, order.driver_lng]);
     });
 }
 
@@ -356,6 +376,17 @@ async function loadOrders(){
                     </span>
                 </div>
             </div>
+
+            <div style="color:#666; margin-top:4px;">
+    Driver: ${order.driver_id || "not assigned"}
+</div>
+<div style="color:#666; margin-top:4px;">
+    Driver pos: ${
+        order.driver_lat && order.driver_lng
+        ? `${order.driver_lat}, ${order.driver_lng}`
+        : "unknown"
+    }
+</div>
 
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 ${
@@ -450,6 +481,27 @@ async function loadOrders(){
                 orderMarkers.push(restaurantMarker);
                 allPoints.push([restaurantLat, restaurantLng]);
             }
+
+            if(
+    order.driver_lat && order.driver_lng &&
+    restaurantLat && restaurantLng &&
+    ["driver_assigned", "collected", "to_customer"].includes(order.status || "")
+){
+    const liveLine = L.polyline(
+        [
+            [order.driver_lat, order.driver_lng],
+            [restaurantLat, restaurantLng]
+        ],
+        {
+            color: "#2563eb",
+            weight: 3,
+            opacity: 0.7,
+            dashArray: "6, 6"
+        }
+    ).addTo(map);
+
+    orderMarkers.push(liveLine);
+}
 
 
             if(customerLat && customerLng){
