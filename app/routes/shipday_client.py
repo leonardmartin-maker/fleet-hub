@@ -1,4 +1,6 @@
 from typing import Any, Dict, Optional
+import re
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
@@ -25,9 +27,21 @@ def require_shipday_client_token(tenant: Dict[str, Any], request: Request) -> No
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
+def extract_tracking_id(tracking_url: str | None) -> str | None:
+    if not tracking_url:
+        return None
+
+    m = re.search(r"/trackingPage/([^&/?]+)", tracking_url)
+    if not m:
+        return None
+
+    return m.group(1)
+
+
 def normalize_shipday_client_status(payload: Dict[str, Any]) -> Optional[str]:
     event = str(payload.get("event") or "").upper()
     order_status = str(payload.get("order_status") or "").upper()
+    order = payload.get("order") or {}
 
     event_mapping = {
         "ORDER_ACCEPTED": "created",
@@ -62,7 +76,22 @@ def normalize_shipday_client_status(payload: Dict[str, Any]) -> Optional[str]:
         "CANCELED": "cancelled",
     }
 
-    return status_mapping.get(order_status)
+    if order_status in status_mapping:
+        return status_mapping[order_status]
+
+    if order.get("delivery_time") or order.get("completed_time") or order.get("end_time"):
+        return "delivered"
+
+    if order.get("arrived_time"):
+        return "to_customer"
+
+    if order.get("pickedup_time"):
+        return "collected"
+
+    if order.get("assigned_time") or order.get("start_time"):
+        return "driver_assigned"
+
+    return None
 
 
 @router.post("/webhooks/shipday-client/{tenant_id}")
@@ -94,6 +123,7 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
 
     shipday_order_id = order.get("id")
     tracking_url = payload.get("trackingUrl")
+    tracking_id = extract_tracking_id(tracking_url)
     normalized_status = normalize_shipday_client_status(payload)
 
     driver_id = carrier.get("id")
@@ -171,7 +201,7 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
             source_order_id=source_order_id,
             shipday_order_id=shipday_order_id,
             shipday_tracking_url=tracking_url,
-            shipday_tracking_id=None,
+            shipday_tracking_id=tracking_id,
             data=merged_data,
         )
 
