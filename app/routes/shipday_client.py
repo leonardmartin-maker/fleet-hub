@@ -8,7 +8,7 @@ from app.utils import now_ts, stable_event_id
 router = APIRouter()
 
 
-@router.post("/webhooks/shipday/client")
+@router.post("/webhooks/shipday/{tenant_id}")
 async def shipday_client_webhook(request: Request):
     payload: Dict[str, Any] = await request.json()
     ts = now_ts()
