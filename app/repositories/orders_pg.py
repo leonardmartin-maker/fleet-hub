@@ -76,3 +76,34 @@ class OrderRepositoryPG:
                     """
                 )
                 return cur.fetchall()
+            
+    @staticmethod
+    def update_status(source_order_id: str, status: str):
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE orders
+                    SET status = %s
+                    WHERE source_order_id = %s
+                    """,
+                    (status, source_order_id),
+                )
+
+
+    @staticmethod
+    def update_driver(source_order_id: str, driver_id: str, lat: float | None, lng: float | None):
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE orders
+                    SET driver_id = %s,
+                        driver_lat = %s,
+                        driver_lng = %s
+                    WHERE source_order_id = %s
+                    """,
+                    (driver_id, lat, lng, source_order_id),
+                )

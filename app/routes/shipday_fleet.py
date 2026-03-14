@@ -74,6 +74,20 @@ async def shipday_fleet_webhook(request: Request):
         },
     )
 
+    if normalized_status and order_id:
+        OrderRepositoryPG.update_status(
+            order_id,
+            normalized_status
+        )
+
+    if driver.get("id"):
+        OrderRepositoryPG.update_driver(
+            order_id,
+            driver.get("id"),
+            driver_location.get("lat"),
+            driver_location.get("lng"),
+        )
+
     return JSONResponse(
         status_code=202,
         content={"accepted": True, "scope": "fleet", "orderId": order_id},
