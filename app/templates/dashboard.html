@@ -337,8 +337,8 @@ Just Eat restaurant already connected
                 <th>Platform</th>
                 <th>Order</th>
                 <th>Status</th>
-                <th>Tracking</th>
                 <th>Driver</th>
+                <th>Tracking</th>
                 <th>Created</th>
             </tr>
 
@@ -354,45 +354,55 @@ Just Eat restaurant already connected
         </span>
     </td>
     <td>
-{% if o.driver_id %}
-🚗 {{ o.driver_id }}
-{% else %}
--
-{% endif %}
-</td>
-    <td>
-        {% if o.shipday_tracking_url %}
-        <a
-            href="{{ o.shipday_tracking_url }}"
-            target="_blank"
-            rel="noopener noreferrer"
-            style="
-                background:#10b981;
-                color:white;
-                padding:6px 10px;
-                border-radius:6px;
-                text-decoration:none;
-                font-weight:bold;
-                font-size:13px;
-                display:inline-block;
-            "
-        >
-            Track
-        </a>
-        {% else %}
-        <span style="
-            color:#667;
-            font-size:13px;
-            background:#f3f4f6;
+    {% if o.shipday_tracking_url %}
+    <a
+        href="{{ o.shipday_tracking_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        style="
+            background:#10b981;
+            color:white;
             padding:6px 10px;
             border-radius:6px;
+            text-decoration:none;
+            font-weight:bold;
+            font-size:13px;
             display:inline-block;
-        ">
-            N/A
-        </span>
-        {% endif %}
-    </td>
-    <td>{{ o.created_at }}</td>
+        "
+    >
+        Track
+    </a>
+    {% else %}
+    <span style="
+        color:#667;
+        font-size:13px;
+        background:#f3f4f6;
+        padding:6px 10px;
+        border-radius:6px;
+        display:inline-block;
+    ">
+        N/A
+    </span>
+    {% endif %}
+</td>
+<td>
+    {% if o.driver_id %}
+    <span style="
+        background:#eef2ff;
+        color:#3730a3;
+        padding:6px 10px;
+        border-radius:6px;
+        font-weight:bold;
+        font-size:13px;
+        display:inline-block;
+    ">
+        🚗 {{ o.driver_id }}
+    </span>
+    {% else %}
+    -
+    {% endif %}
+</td>
+<td>{{ o.created_at }}</td>
 </tr>
             {% endfor %}
         </table>

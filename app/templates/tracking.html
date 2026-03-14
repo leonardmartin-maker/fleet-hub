@@ -324,21 +324,22 @@ async function loadOrders(){
 
         row.innerHTML = `
             <div>
-                <strong style="font-size:15px;">${order.source_order_id}</strong>
-                <div style="color:#666; margin-top:4px;">Tenant: ${order.tenant_id || "-"}</div>
-                <div style="margin-top:6px;">
-                    <span style="
-                        padding:4px 8px;
-                        border-radius:999px;
-                        font-weight:bold;
-                        color:white;
-                        background:${getStatusColor(order.status)};
-                        font-size:12px;
-                    ">
-                        ${order.status || "unknown"}
-                    </span>
-                </div>
-            </div>
+    <strong style="font-size:15px;">${order.source_order_id}</strong>
+    <div style="color:#666; margin-top:4px;">Tenant: ${order.tenant_id || "-"}</div>
+    <div style="color:#666; margin-top:4px;">Driver: ${order.driver_id || "not assigned"}</div>
+    <div style="margin-top:6px;">
+        <span style="
+            padding:4px 8px;
+            border-radius:999px;
+            font-weight:bold;
+            color:white;
+            background:${getStatusColor(order.status)};
+            font-size:12px;
+        ">
+            ${order.status || "unknown"}
+        </span>
+    </div>
+</div>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 ${order.shipday_tracking_url ? `
                     <a
@@ -397,29 +398,28 @@ async function loadOrders(){
                 )
                 .addTo(map)
                 .bindPopup(`
-                    <div style="min-width:200px; line-height:1.5;">
-                        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
-                            Restaurant
-                        </div>
-                        <div>Order: ${order.source_order_id}</div>
-                        <div>Tenant: ${order.tenant_id || "-"}</div>
-                        <div>
-                            Status: ${order.status || "unknown"}<br>
-Driver: ${order.driver_id || "not assigned"}
-                            Status:
-                            <span style="
-                                padding:2px 6px;
-                                border-radius:999px;
-                                color:white;
-                                background:${getStatusColor(order.status)};
-                                font-size:12px;
-                                font-weight:bold;
-                            ">
-                                ${order.status || "unknown"}
-                            </span>
-                        </div>
-                    </div>
-                `);
+    <div style="min-width:200px; line-height:1.5;">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
+            Restaurant
+        </div>
+        <div>Order: ${order.source_order_id}</div>
+        <div>Tenant: ${order.tenant_id || "-"}</div>
+        <div>Driver: ${order.driver_id || "not assigned"}</div>
+        <div style="margin-top:6px;">
+            Status:
+            <span style="
+                padding:2px 6px;
+                border-radius:999px;
+                color:white;
+                background:${getStatusColor(order.status)};
+                font-size:12px;
+                font-weight:bold;
+            ">
+                ${order.status || "unknown"}
+            </span>
+        </div>
+    </div>
+`);
 
                 orderMarkers.push(restaurantMarker);
                 allPoints.push([restaurantLat, restaurantLng]);
