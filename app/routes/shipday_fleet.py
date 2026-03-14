@@ -1,10 +1,10 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.repositories.events_pg import EventRepositoryPG
 from app.repositories.orders_pg import OrderRepositoryPG
-from app.utils import now_ts, stable_event_id
+from app.utils import now_ts, stable_event_id, tenant_log_paths, jsonl_append
 
 router = APIRouter()
 
@@ -24,24 +24,6 @@ def require_shipday_fleet_token(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-def normalize_shipday_status(status: Optional[str]) -> Optional[str]:
-    if not status:
-        return None
-
-    mapping = {
-        "driver_assigned": "driver_assigned",
-        "assigned": "driver_assigned",
-        "picked_up": "collected",
-        "pickedup": "collected",
-        "on_the_way": "to_customer",
-        "on_the_way_to_customer": "to_customer",
-        "delivered": "delivered",
-        "cancelled": "cancelled",
-        "canceled": "cancelled",
-    }
-    return mapping.get(str(status).lower())
-
-
 @router.post("/webhooks/shipday-fleet")
 async def shipday_fleet_webhook(request: Request):
     require_shipday_fleet_token(request)
@@ -50,14 +32,32 @@ async def shipday_fleet_webhook(request: Request):
     ts = now_ts()
     event_id = stable_event_id(payload)
 
+    print("SHIPDAY FLEET PAYLOAD =", payload)
+
     order_id = payload.get("orderId") or payload.get("orderNumber")
     driver = payload.get("driver") or {}
     driver_location = payload.get("driverLocation") or {}
-    raw_status = payload.get("status")
-    normalized_status = normalize_shipday_status(raw_status)
 
     existing_order = OrderRepositoryPG.find_by_source(order_id) if order_id else None
     tenant_id = existing_order.get("tenant_id") if existing_order else "fleet"
+
+    try:
+        paths = tenant_log_paths(tenant_id)
+        jsonl_append(
+            paths["shipday_fleet_in"],
+            {
+                "ts": ts,
+                "tenantId": tenant_id,
+                "eventId": event_id,
+                "orderId": order_id,
+                "payload": payload,
+                "driverId": driver.get("id"),
+                "lat": driver_location.get("lat"),
+                "lng": driver_location.get("lng"),
+            },
+        )
+    except Exception:
+        pass
 
     EventRepositoryPG.append(
         tenant_id=tenant_id,
@@ -69,23 +69,16 @@ async def shipday_fleet_webhook(request: Request):
             "driverId": driver.get("id"),
             "lat": driver_location.get("lat"),
             "lng": driver_location.get("lng"),
-            "normalizedStatus": normalized_status,
             "payload": payload,
         },
     )
 
-    if normalized_status and order_id:
-        OrderRepositoryPG.update_status(
-            order_id,
-            normalized_status
-        )
-
-    if driver.get("id"):
+    if existing_order and order_id and driver.get("id"):
         OrderRepositoryPG.update_driver(
-            order_id,
-            driver.get("id"),
-            driver_location.get("lat"),
-            driver_location.get("lng"),
+            source_order_id=order_id,
+            driver_id=str(driver.get("id")),
+            lat=driver_location.get("lat"),
+            lng=driver_location.get("lng"),
         )
 
     return JSONResponse(
