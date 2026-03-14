@@ -8,7 +8,7 @@ from app.utils import now_ts, stable_event_id
 
 router = APIRouter()
 
-FLEET_WEBHOOK_TOKEN = "CHANGE_ME_FLEET_TOKEN"
+FLEET_WEBHOOK_TOKEN = "FleetShipdaySecureToken2026"
 
 
 def require_shipday_fleet_token(request: Request) -> None:
@@ -42,7 +42,7 @@ def normalize_shipday_status(status: Optional[str]) -> Optional[str]:
     return mapping.get(str(status).lower())
 
 
-@router.post("/webhooks/shipday/fleet")
+@router.post("/webhooks/shipday-fleet")
 async def shipday_fleet_webhook(request: Request):
     require_shipday_fleet_token(request)
 
