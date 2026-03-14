@@ -58,6 +58,7 @@ def list_orders():
                 "driver_id": o.get("driver_id"),
                 "driver_lat": o.get("driver_lat"),
                 "driver_lng": o.get("driver_lng"),
+                "driver_last_seen_at": o.get("driver_last_seen_at"),
                 "data": o.get("data"),
                 "created_at": o.get("created_at"),
             }

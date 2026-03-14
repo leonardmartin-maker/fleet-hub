@@ -110,7 +110,8 @@ class OrderRepositoryPG:
                     UPDATE orders
                     SET driver_id = %s,
                         driver_lat = %s,
-                        driver_lng = %s
+                        driver_lng = %s,
+                        driver_last_seen_at = NOW()
                     WHERE source_order_id = %s
                     """,
                     (driver_id, lat, lng, source_order_id),

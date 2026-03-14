@@ -275,15 +275,17 @@ async function loadDrivers(){
         )
         .addTo(map)
         .bindPopup(`
-            <div style="min-width:220px; line-height:1.5;">
-                <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
-                    🚗 Driver ${order.driver_id}
-                </div>
-                <div>Order: ${order.source_order_id}</div>
-                <div>Tenant: ${order.tenant_id || "-"}</div>
-                <div>Status: ${order.status || "unknown"}</div>
-            </div>
-        `);
+    <div style="min-width:220px; line-height:1.5;">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
+            🚗 Driver ${order.driver_id}
+        </div>
+        <div>Name: ${(order.data && order.data.driverName) || "unknown"}</div>
+        <div>Order: ${order.source_order_id}</div>
+        <div>Tenant: ${order.tenant_id || "-"}</div>
+        <div>Status: ${order.status || "unknown"}</div>
+        <div>Last seen: ${order.driver_last_seen_at || "unknown"}</div>
+    </div>
+`);
 
         driverMarkers.push(marker);
         driversCache.push({
@@ -371,6 +373,9 @@ async function loadOrders(){
                 : "unknown"
             }
         </div>
+        <div style="color:#666;margin-top:4px;">
+    Last seen: ${order.driver_last_seen_at || "unknown"}
+</div>
         <div style="margin-top:6px;">
             <span style="
                 padding:4px 8px;
