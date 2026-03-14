@@ -274,6 +274,7 @@ async function loadDrivers(){
 }
 
 async function loadOrders(){
+
     const r = await fetch("/platform/orders");
     const data = await r.json();
 
@@ -295,8 +296,13 @@ async function loadOrders(){
     const selectedStatus = getSelectedStatus();
 
     const filteredOrders = data.orders.filter(order => {
-        if (selectedTenant && (order.tenant_id || "") !== selectedTenant) return false;
-        if (selectedStatus && (order.status || "") !== selectedStatus) return false;
+
+        if (selectedTenant && (order.tenant_id || "") !== selectedTenant)
+            return false;
+
+        if (selectedStatus && (order.status || "") !== selectedStatus)
+            return false;
+
         return true;
     });
 
@@ -304,6 +310,7 @@ async function loadOrders(){
     updateLiveSummary();
 
     if(filteredOrders.length === 0){
+
         container.innerHTML = `
             <div style="
                 color:#666;
@@ -315,33 +322,42 @@ async function loadOrders(){
                 No orders match the selected filters.
             </div>
         `;
+
         return;
     }
 
     filteredOrders.forEach(order => {
+
         const row = document.createElement("div");
         row.className = "order-row";
 
         row.innerHTML = `
             <div>
-    <strong style="font-size:15px;">${order.source_order_id}</strong>
-    <div style="color:#666; margin-top:4px;">Tenant: ${order.tenant_id || "-"}</div>
-    <div style="color:#666; margin-top:4px;">Driver: ${order.driver_id || "not assigned"}</div>
-    <div style="margin-top:6px;">
-        <span style="
-            padding:4px 8px;
-            border-radius:999px;
-            font-weight:bold;
-            color:white;
-            background:${getStatusColor(order.status)};
-            font-size:12px;
-        ">
-            ${order.status || "unknown"}
-        </span>
-    </div>
-</div>
+                <strong style="font-size:15px;">${order.source_order_id}</strong>
+                <div style="color:#666;margin-top:4px;">
+                    Tenant: ${order.tenant_id || "-"}
+                </div>
+                <div style="color:#666;margin-top:4px;">
+                    Driver: ${order.driver_id || "not assigned"}
+                </div>
+                <div style="margin-top:6px;">
+                    <span style="
+                        padding:4px 8px;
+                        border-radius:999px;
+                        font-weight:bold;
+                        color:white;
+                        background:${getStatusColor(order.status)};
+                        font-size:12px;
+                    ">
+                        ${order.status || "unknown"}
+                    </span>
+                </div>
+            </div>
+
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                ${order.shipday_tracking_url ? `
+                ${
+                    order.shipday_tracking_url
+                    ? `
                     <a
                         href="${order.shipday_tracking_url}"
                         target="_blank"
@@ -358,7 +374,8 @@ async function loadOrders(){
                     >
                         Track
                     </a>
-                ` : `
+                    `
+                    : `
                     <span style="
                         color:#666;
                         font-size:13px;
@@ -368,7 +385,9 @@ async function loadOrders(){
                     ">
                         No track
                     </span>
-                `}
+                    `
+                }
+
                 <button onclick="suggestDriver('${order.source_order_id}')">
                     Suggest driver
                 </button>
@@ -377,7 +396,9 @@ async function loadOrders(){
 
         container.appendChild(row);
 
+
         if(order.data){
+
             const restaurantLat =
                 order.data.pickupLatitude ||
                 order.data.restaurantLatitude ||
@@ -391,41 +412,45 @@ async function loadOrders(){
             const customerLat = order.data.customerLatitude;
             const customerLng = order.data.customerLongitude;
 
+
             if(restaurantLat && restaurantLng){
+
                 const restaurantMarker = L.marker(
                     [restaurantLat, restaurantLng],
                     { icon: restaurantIcon }
                 )
                 .addTo(map)
                 .bindPopup(`
-    <div style="min-width:200px; line-height:1.5;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
-            Restaurant
-        </div>
-        <div>Order: ${order.source_order_id}</div>
-        <div>Tenant: ${order.tenant_id || "-"}</div>
-        <div>Driver: ${order.driver_id || "not assigned"}</div>
-        <div style="margin-top:6px;">
-            Status:
-            <span style="
-                padding:2px 6px;
-                border-radius:999px;
-                color:white;
-                background:${getStatusColor(order.status)};
-                font-size:12px;
-                font-weight:bold;
-            ">
-                ${order.status || "unknown"}
-            </span>
-        </div>
-    </div>
-`);
+                    <div style="min-width:200px; line-height:1.5;">
+                        <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">
+                            🏪 Restaurant
+                        </div>
+                        <div>Order: ${order.source_order_id}</div>
+                        <div>Tenant: ${order.tenant_id || "-"}</div>
+                        <div>Driver: ${order.driver_id || "not assigned"}</div>
+                        <div style="margin-top:6px;">
+                            Status:
+                            <span style="
+                                padding:2px 6px;
+                                border-radius:999px;
+                                color:white;
+                                background:${getStatusColor(order.status)};
+                                font-size:12px;
+                                font-weight:bold;
+                            ">
+                                ${order.status || "unknown"}
+                            </span>
+                        </div>
+                    </div>
+                `);
 
                 orderMarkers.push(restaurantMarker);
                 allPoints.push([restaurantLat, restaurantLng]);
             }
 
+
             if(customerLat && customerLng){
+
                 const customerMarker = L.marker(
                     [customerLat, customerLng],
                     { icon: customerIcon }
@@ -433,15 +458,16 @@ async function loadOrders(){
                 .addTo(map)
                 .bindPopup(`
                     <div style="min-width:200px; line-height:1.5;">
-                        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
-                            Customer
+                        <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">
+                            🏠 Customer
                         </div>
                         <div>Order: ${order.source_order_id}</div>
                         <div>Tenant: ${order.tenant_id || "-"}</div>
-                        <div>
+
+                        <div style="margin-top:8px;">
                             ${
                                 order.shipday_tracking_url
-                                ? `<a href="${order.shipday_tracking_url}" target="_blank" rel="noopener noreferrer">Open tracking</a>`
+                                ? `<a href="${order.shipday_tracking_url}" target="_blank">Open tracking</a>`
                                 : `No tracking`
                             }
                         </div>
@@ -452,7 +478,9 @@ async function loadOrders(){
                 allPoints.push([customerLat, customerLng]);
             }
         }
+
     });
+
 }
 
 function drawDispatchLine(driverLat, driverLng, orderLat, orderLng){
