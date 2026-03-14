@@ -55,6 +55,9 @@ def list_orders():
                 "shipday_tracking_url": o.get("shipday_tracking_url"),
                 "shipday_tracking_id": o.get("shipday_tracking_id"),
                 "status": o.get("status"),
+                "driver_id": o.get("driver_id"),
+                "driver_lat": o.get("driver_lat"),
+                "driver_lng": o.get("driver_lng"),
                 "data": o.get("data"),
                 "created_at": o.get("created_at"),
             }
