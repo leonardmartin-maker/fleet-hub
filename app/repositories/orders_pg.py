@@ -132,7 +132,7 @@ class OrderRepositoryPG:
                     SET shipday_order_id = COALESCE(%s, shipday_order_id),
                         shipday_tracking_url = COALESCE(%s, shipday_tracking_url),
                         shipday_tracking_id = COALESCE(%s, shipday_tracking_id),
-                        data = COALESCE(%s, data)
+                        data = COALESCE(%s::jsonb, data)
                     WHERE source_order_id = %s
                     """,
                     (
