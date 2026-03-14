@@ -168,6 +168,7 @@
             <span class="legend-badge" style="background:purple;">in progress</span>
             <span class="legend-badge" style="background:green;">delivered</span>
             <span class="legend-badge" style="background:red;">cancelled</span>
+            <span class="legend-badge" style="background:red;">failed</span>
             <span class="legend-badge" style="background:gray;">unknown</span>
         </div>
     </div>
@@ -233,10 +234,10 @@ function getStatusColor(status){
             return "green";
         case "cancelled":
             return "red";
-        default:
-            return "gray";
         case "failed":
             return "red";
+        default:
+            return "gray";
     }
 }
 
@@ -355,78 +356,74 @@ async function loadOrders(){
         row.className = "order-row";
 
         row.innerHTML = `
-            <div>
-                <strong style="font-size:15px;">${order.source_order_id}</strong>
-                <div style="color:#666;margin-top:4px;">
-                    Tenant: ${order.tenant_id || "-"}
-                </div>
-                <div style="color:#666;margin-top:4px;">
-                    Driver: ${order.driver_id || "not assigned"}
-                </div>
-                <div style="margin-top:6px;">
-                    <span style="
-                        padding:4px 8px;
-                        border-radius:999px;
-                        font-weight:bold;
-                        color:white;
-                        background:${getStatusColor(order.status)};
-                        font-size:12px;
-                    ">
-                        ${order.status || "unknown"}
-                    </span>
-                </div>
-            </div>
+    <div>
+        <strong style="font-size:15px;">${order.source_order_id}</strong>
+        <div style="color:#666;margin-top:4px;">
+            Tenant: ${order.tenant_id || "-"}
+        </div>
+        <div style="color:#666;margin-top:4px;">
+            Driver: ${order.driver_id || "not assigned"}
+        </div>
+        <div style="color:#666;margin-top:4px;">
+            Driver pos: ${
+                order.driver_lat && order.driver_lng
+                ? `${order.driver_lat}, ${order.driver_lng}`
+                : "unknown"
+            }
+        </div>
+        <div style="margin-top:6px;">
+            <span style="
+                padding:4px 8px;
+                border-radius:999px;
+                font-weight:bold;
+                color:white;
+                background:${getStatusColor(order.status)};
+                font-size:12px;
+            ">
+                ${order.status || "unknown"}
+            </span>
+        </div>
+    </div>
 
-            <div style="color:#666; margin-top:4px;">
-    Driver: ${order.driver_id || "not assigned"}
-</div>
-<div style="color:#666; margin-top:4px;">
-    Driver pos: ${
-        order.driver_lat && order.driver_lng
-        ? `${order.driver_lat}, ${order.driver_lng}`
-        : "unknown"
-    }
-</div>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        ${
+            order.shipday_tracking_url
+            ? `
+            <a
+                href="${order.shipday_tracking_url}"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="
+                    background:#10b981;
+                    color:white;
+                    padding:8px 10px;
+                    border-radius:6px;
+                    text-decoration:none;
+                    font-weight:bold;
+                    font-size:13px;
+                "
+            >
+                Track
+            </a>
+            `
+            : `
+            <span style="
+                color:#666;
+                font-size:13px;
+                background:#f3f4f6;
+                padding:8px 10px;
+                border-radius:6px;
+            ">
+                No track
+            </span>
+            `
+        }
 
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                ${
-                    order.shipday_tracking_url
-                    ? `
-                    <a
-                        href="${order.shipday_tracking_url}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style="
-                            background:#10b981;
-                            color:white;
-                            padding:8px 10px;
-                            border-radius:6px;
-                            text-decoration:none;
-                            font-weight:bold;
-                            font-size:13px;
-                        "
-                    >
-                        Track
-                    </a>
-                    `
-                    : `
-                    <span style="
-                        color:#666;
-                        font-size:13px;
-                        background:#f3f4f6;
-                        padding:8px 10px;
-                        border-radius:6px;
-                    ">
-                        No track
-                    </span>
-                    `
-                }
-
-                <button onclick="suggestDriver('${order.source_order_id}')">
-                    Suggest driver
-                </button>
-            </div>
-        `;
+        <button onclick="suggestDriver('${order.source_order_id}')">
+            Suggest driver
+        </button>
+    </div>
+`;
 
         container.appendChild(row);
 
@@ -455,28 +452,16 @@ async function loadOrders(){
                 )
                 .addTo(map)
                 .bindPopup(`
-                    <div style="min-width:200px; line-height:1.5;">
-                        <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">
-                            🏪 Restaurant
-                        </div>
-                        <div>Order: ${order.source_order_id}</div>
-                        <div>Tenant: ${order.tenant_id || "-"}</div>
-                        <div>Driver: ${order.driver_id || "not assigned"}</div>
-                        <div style="margin-top:6px;">
-                            Status:
-                            <span style="
-                                padding:2px 6px;
-                                border-radius:999px;
-                                color:white;
-                                background:${getStatusColor(order.status)};
-                                font-size:12px;
-                                font-weight:bold;
-                            ">
-                                ${order.status || "unknown"}
-                            </span>
-                        </div>
-                    </div>
-                `);
+    <div style="min-width:220px; line-height:1.5;">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">
+            🚗 Driver ${order.driver_id}
+        </div>
+        <div>Name: ${(order.data && order.data.driverName) || "unknown"}</div>
+        <div>Order: ${order.source_order_id}</div>
+        <div>Tenant: ${order.tenant_id || "-"}</div>
+        <div>Status: ${order.status || "unknown"}</div>
+    </div>
+`);
 
                 orderMarkers.push(restaurantMarker);
                 allPoints.push([restaurantLat, restaurantLng]);
