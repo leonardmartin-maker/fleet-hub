@@ -139,6 +139,7 @@
                     <option value="to_customer">to_customer</option>
                     <option value="delivered">delivered</option>
                     <option value="cancelled">cancelled</option>
+                    <option value="failed">failed</option>
                 </select>
             </div>
 
@@ -234,6 +235,8 @@ function getStatusColor(status){
             return "red";
         default:
             return "gray";
+        case "failed":
+            return "red";
     }
 }
 

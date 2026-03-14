@@ -31,11 +31,16 @@ def normalize_shipday_client_status(payload: Dict[str, Any]) -> Optional[str]:
 
     event_mapping = {
         "ORDER_ACCEPTED": "created",
+        "ORDER_CONFIRMED": "created",
         "ORDER_DRIVERASSIGNED": "driver_assigned",
         "ORDER_PICKEDUP": "collected",
         "ORDER_ONTHEWAY": "to_customer",
+        "ORDER_ARRIVED": "to_customer",
         "ORDER_DELIVERED": "delivered",
+        "ORDER_COMPLETED": "delivered",
+        "ORDER_FAILED": "failed",
         "ORDER_CANCELLED": "cancelled",
+        "ORDER_CANCELED": "cancelled",
     }
 
     if event in event_mapping:
@@ -43,10 +48,16 @@ def normalize_shipday_client_status(payload: Dict[str, Any]) -> Optional[str]:
 
     status_mapping = {
         "NOT_ASSIGNED": "created",
+        "ACCEPTED": "created",
+        "CONFIRMED": "created",
         "DRIVER_ASSIGNED": "driver_assigned",
         "PICKEDUP": "collected",
         "READY_TO_DELIVER": "to_customer",
+        "ONTHEWAY": "to_customer",
+        "ON_THE_WAY": "to_customer",
         "DELIVERED": "delivered",
+        "COMPLETED": "delivered",
+        "FAILED": "failed",
         "CANCELLED": "cancelled",
         "CANCELED": "cancelled",
     }
@@ -139,19 +150,22 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
             )
 
         merged_data = dict(existing_order.get("data") or {})
-        merged_data.update(
-            {
-                "pickupLatitude": pickup_location.get("lat"),
-                "pickupLongitude": pickup_location.get("lng"),
-                "customerLatitude": delivery_location.get("lat"),
-                "customerLongitude": delivery_location.get("lng"),
-                "driverName": driver_name,
-                "driverPhone": driver_phone,
-                "trackingUrl": tracking_url,
-                "shipdayFleetDeliveryId": shipday_fleet_delivery_id,
-                "shipdayClientOrderId": shipday_order_id,
-            }
-        )
+
+        new_data = {
+            "pickupLatitude": pickup_location.get("lat"),
+            "pickupLongitude": pickup_location.get("lng"),
+            "customerLatitude": delivery_location.get("lat"),
+            "customerLongitude": delivery_location.get("lng"),
+            "driverName": driver_name,
+            "driverPhone": driver_phone,
+            "trackingUrl": tracking_url,
+            "shipdayFleetDeliveryId": shipday_fleet_delivery_id,
+            "shipdayClientOrderId": shipday_order_id,
+        }
+
+        for key, value in new_data.items():
+            if value is not None:
+                merged_data[key] = value
 
         OrderRepositoryPG.update_metadata(
             source_order_id=source_order_id,
