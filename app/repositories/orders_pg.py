@@ -107,3 +107,31 @@ class OrderRepositoryPG:
                     """,
                     (driver_id, lat, lng, source_order_id),
                 )
+
+    @staticmethod
+    def update_metadata(
+        source_order_id: str,
+        shipday_order_id: Any = None,
+        shipday_tracking_url: str | None = None,
+        shipday_tracking_id: str | None = None,
+        data: Dict[str, Any] | None = None,
+    ):
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE orders
+                    SET shipday_order_id = COALESCE(%s, shipday_order_id),
+                        shipday_tracking_url = COALESCE(%s, shipday_tracking_url),
+                        shipday_tracking_id = COALESCE(%s, shipday_tracking_id),
+                        data = COALESCE(%s, data)
+                    WHERE source_order_id = %s
+                    """,
+                    (
+                        str(shipday_order_id) if shipday_order_id is not None else None,
+                        shipday_tracking_url,
+                        shipday_tracking_id,
+                        data,
+                        source_order_id,
+                    ),
+                )
