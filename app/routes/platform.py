@@ -1,13 +1,11 @@
 from fastapi import APIRouter
 
 from app.repositories.tenants_pg import TenantRepositoryPG
-from app.config import LOG_DIR
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.repositories.events_pg import EventRepositoryPG
 from app.services.order_state import build_order_view
 from app.services.replay import replay_order
 from app.services.metrics import get_health, get_stats, get_retries
-from app.repositories.tenants_pg import TenantRepositoryPG
 from app.services.shipday import assign_order_to_driver
 
 router = APIRouter()
@@ -15,7 +13,7 @@ router = APIRouter()
 
 @router.get("/health")
 def health():
-    return {"ok": True, "v": "4"}
+    return get_health()
 
 
 @router.get("/tenants")

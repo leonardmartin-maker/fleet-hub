@@ -1,10 +1,9 @@
 from fastapi import APIRouter
-import os
 import httpx
 
-router = APIRouter()
+from app.config import SHIPDAY_TOKEN
 
-SHIPDAY_TOKEN = os.getenv("SHIPDAY_TOKEN")
+router = APIRouter()
 
 
 @router.get("/drivers")

@@ -1,7 +1,8 @@
 import time
 from typing import Dict, Any
 
-from app.repositories.events import EventRepository
+from app.config import logger
+from app.repositories.events_pg import EventRepositoryPG
 from app.services.replay import replay_order
 
 RETRY_QUEUE = []
@@ -38,7 +39,8 @@ async def process_retry_queue():
         if item["attempts"] > 5:
             RETRY_QUEUE.remove(item)
 
-            EventRepository.append(
+            logger.warning("Retry gave up for order %s after %d attempts", order_id, item["attempts"])
+            EventRepositoryPG.append(
                 tenant_id=result.get("tenantId"),
                 event_type="justeat.retry.gave_up",
                 order_id=order_id,

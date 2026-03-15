@@ -1,13 +1,11 @@
 from fastapi import APIRouter
-import os
 import httpx
 
+from app.config import SHIPDAY_TOKEN
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.services.dispatch import suggest_best_driver
 
 router = APIRouter()
-
-SHIPDAY_TOKEN = os.getenv("SHIPDAY_TOKEN")
 
 
 async def fetch_drivers():

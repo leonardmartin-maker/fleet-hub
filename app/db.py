@@ -1,11 +1,22 @@
-import os
-from psycopg import connect
-from psycopg.rows import dict_row
+import contextlib
+from typing import Generator
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://fleet_user:CHANGE_ME_STRONG_PASSWORD@localhost/fleet_hub",
+from psycopg import Connection
+from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
+
+from app.config import DATABASE_URL
+
+pool = ConnectionPool(
+    conninfo=DATABASE_URL,
+    min_size=2,
+    max_size=10,
+    kwargs={"row_factory": dict_row},
 )
 
-def get_conn():
-    return connect(DATABASE_URL, row_factory=dict_row)
+
+@contextlib.contextmanager
+def get_conn() -> Generator[Connection, None, None]:
+    """Yield a connection from the pool (auto-committed on exit)."""
+    with pool.connection() as conn:
+        yield conn

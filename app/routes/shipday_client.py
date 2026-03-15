@@ -7,7 +7,8 @@ from fastapi.responses import JSONResponse
 from app.repositories.events_pg import EventRepositoryPG
 from app.repositories.tenants_pg import TenantRepositoryPG
 from app.repositories.orders_pg import OrderRepositoryPG
-from app.utils import now_ts, stable_event_id, tenant_log_paths, jsonl_append
+from app.config import logger
+from app.utils import now_ts, stable_event_id
 from app.services.justeat import (
     map_shipday_to_jet_state,
     build_deliverystate_payload,
@@ -140,22 +141,6 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
 
     if not source_order_id:
         raise HTTPException(status_code=422, detail="Missing source order id")
-
-    try:
-        paths = tenant_log_paths(tenant_id)
-        jsonl_append(
-            paths["shipday_client_in"],
-            {
-                "ts": ts,
-                "tenantId": tenant_id,
-                "eventId": event_id,
-                "orderId": source_order_id,
-                "payload": payload,
-                "normalizedStatus": normalized_status,
-            },
-        )
-    except Exception:
-        pass
 
     raw_event = str(payload.get("event") or "").upper()
     if raw_event in {"DRIVER_UNASSIGNED", "ORDER_UNASSIGNED"}:

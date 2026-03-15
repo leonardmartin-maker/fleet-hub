@@ -50,11 +50,11 @@ def create_restaurant(
     restaurant_address = restaurant_address.strip()
     restaurant_phone = restaurant_phone.strip()
 
-    if shipday_api_key:
-        api_key = shipday_api_key
-    else:
-        api_key = existing["shipday"]["api_key"]
-
+    if not shipday_api_key:
+        return RedirectResponse(
+            url="/dashboard?error=missing_shipday_key",
+            status_code=303,
+        )
 
     data = {
         "justeat": {

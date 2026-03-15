@@ -1,6 +1,7 @@
 from typing import Any, Dict
 from fastapi import APIRouter, HTTPException, Request
 
+from app.config import logger
 from app.storage import get_tenant
 from app.utils import (
     now_ts,
@@ -9,60 +10,23 @@ from app.utils import (
     extract_driver_id,
     extract_geo,
     normalize_status,
-    tenant_log_paths,
-    jsonl_append,
 )
 from app.services.justeat import (
     map_shipday_to_jet_state,
     build_deliverystate_payload,
     put_deliverystate,
 )
-from app.repositories.events import EventRepository
-
-from app.services.retry_queue import enqueue_retry
 from app.repositories.events_pg import EventRepositoryPG
+from app.services.retry_queue import enqueue_retry
 
 router = APIRouter()
 
 
 def require_shipday_token(tenant: Dict[str, Any], request: Request) -> None:
     expected = ((tenant.get("shipday") or {}).get("webhook_token")) or ""
-    incoming = request.headers.get("x-shipday-token") or request.headers.get("X-Shipday-Token") or ""
+    incoming = request.headers.get("x-shipday-token") or ""
     if expected and incoming != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
-
-
-def justeat_draft(
-    normalized_status: str,
-    order_id: str,
-    driver_id,
-    lat,
-    lng,
-    ts: int,
-):
-    status_to_state = {
-        "driver_assigned": "torestaurant",
-        "to_restaurant": "torestaurant",
-        "at_restaurant": "atrestaurant",
-        "collected": "collected",
-        "to_customer": "tocustomer",
-        "delivered": "delivered",
-        "cancelled": "cancelled",
-        "unknown": "unknown",
-    }
-    state = status_to_state.get(normalized_status, normalized_status)
-
-    return {
-        "ts": ts,
-        "orderId": order_id,
-        "justEat": {
-            "action": "deliverystate" if state != "unknown" else "noop",
-            "state": state,
-            "endpointHint": f"/orders/{order_id}/deliverystate/{state}" if state != "unknown" else None,
-            "driverId": driver_id,
-            "position": {"lat": lat, "lng": lng} if lat is not None and lng is not None else None,
-        },
-    }
 
 
 @router.post("/webhooks/shipday/{tenant_id}")
@@ -79,37 +43,6 @@ async def shipday_webhook_tenant(tenant_id: str, request: Request):
     driver_id = extract_driver_id(payload)
     lat, lng = extract_geo(payload)
 
-    paths = tenant_log_paths(tenant_id)
-
-    jsonl_append(
-        paths["shipday_events"],
-        {
-            "ts": ts,
-            "tenantId": tenant_id,
-            "eventId": event_id,
-            "orderId": order_id,
-            "normalizedStatus": normalized_status,
-            "headers": {
-                "user-agent": request.headers.get("user-agent"),
-                "x-forwarded-for": request.headers.get("x-forwarded-for"),
-            },
-            "payload": payload,
-        },
-    )
-
-    EventRepository.append(
-        tenant_id=tenant_id,
-        event_type="shipday.status.received",
-        order_id=order_id,
-        payload={
-            "eventId": event_id,
-            "normalizedStatus": normalized_status,
-            "driverId": driver_id,
-            "lat": lat,
-            "lng": lng,
-        },
-    )
-
     EventRepositoryPG.append(
         tenant_id=tenant_id,
         event_type="shipday.status.received",
@@ -122,12 +55,6 @@ async def shipday_webhook_tenant(tenant_id: str, request: Request):
             "lng": lng,
         },
     )
-
-    if order_id:
-        jsonl_append(
-            paths["justeat_drafts"],
-            justeat_draft(normalized_status, order_id, driver_id, lat, lng, ts),
-        )
 
     jet_state = map_shipday_to_jet_state(normalized_status)
     jet_result = None
@@ -147,34 +74,10 @@ async def shipday_webhook_tenant(tenant_id: str, request: Request):
             body=jet_body,
         )
 
-        jsonl_append(
-            paths["justeat_out"],
-            {
-                "ts": ts,
-                "tenantId": tenant_id,
-                "eventId": event_id,
-                "orderId": order_id,
-                "normalizedStatus": normalized_status,
-                "jetState": jet_state,
-                "jetRequest": jet_body,
-                "jetResult": jet_result,
-            },
-        )
-
-        EventRepository.append(
-            tenant_id=tenant_id,
-            event_type="justeat.status.sent" if jet_result["ok"] else "justeat.status.failed",
-            order_id=order_id,
-            payload={
-                "eventId": event_id,
-                "jetState": jet_state,
-                "jetResult": jet_result,
-            },
-        )
-
+        event_type = "justeat.status.sent" if jet_result["ok"] else "justeat.status.failed"
         EventRepositoryPG.append(
             tenant_id=tenant_id,
-            event_type="justeat.status.sent" if jet_result["ok"] else "justeat.status.failed",
+            event_type=event_type,
             order_id=order_id,
             payload={
                 "eventId": event_id,
@@ -183,7 +86,9 @@ async def shipday_webhook_tenant(tenant_id: str, request: Request):
             },
         )
 
-        enqueue_retry(order_id)
+        if not jet_result["ok"]:
+            enqueue_retry(order_id)
+            logger.warning("JustEat push failed for order %s, enqueued retry", order_id)
 
     return {
         "ok": True,
