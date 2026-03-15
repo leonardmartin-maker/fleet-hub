@@ -22,12 +22,14 @@ def jet_headers(tenant: Dict[str, Any]) -> Dict[str, str]:
 
 def map_shipday_to_jet_state(normalized_status: str) -> Optional[str]:
     mapping = {
+        "driver_assigned": "torestaurant",
         "to_restaurant": "torestaurant",
         "at_restaurant": "atrestaurant",
         "collected": "collected",
         "to_customer": "tocustomer",
         "delivered": "delivered",
         "cancelled": "cancelled",
+        "failed": "cancelled",
     }
     return mapping.get(normalized_status)
 

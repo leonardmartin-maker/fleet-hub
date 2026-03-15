@@ -8,6 +8,11 @@ from app.repositories.events_pg import EventRepositoryPG
 from app.repositories.tenants_pg import TenantRepositoryPG
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.utils import now_ts, stable_event_id, tenant_log_paths, jsonl_append
+from app.services.justeat import (
+    map_shipday_to_jet_state,
+    build_deliverystate_payload,
+    put_deliverystate,
+)
 
 router = APIRouter()
 
@@ -180,6 +185,35 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
     if existing_order:
         if normalized_status:
             OrderRepositoryPG.update_status(source_order_id, normalized_status)
+
+            jet_state = map_shipday_to_jet_state(normalized_status or "")
+
+            if jet_state:
+                jet_body = build_deliverystate_payload(
+                    normalized_status=normalized_status or "",
+                    driver_id=str(driver_id) if driver_id else None,
+                    lat=None,
+                    lng=None,
+                )
+
+                jet_result = await put_deliverystate(
+                    tenant=tenant,
+                    order_id=source_order_id,
+                    state=jet_state,
+                    body=jet_body,
+                )
+
+                EventRepositoryPG.append(
+                    tenant_id=tenant_id,
+                    event_type="justeat.status.pushed" if jet_result["ok"] else "justeat.status.failed",
+                    order_id=source_order_id,
+                    payload={
+                        "normalizedStatus": normalized_status,
+                        "jetState": jet_state,
+                        "body": jet_body,
+                        "result": jet_result,
+                    },
+                )
 
         if driver_id:
             OrderRepositoryPG.update_driver(
