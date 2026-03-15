@@ -144,3 +144,22 @@ class OrderRepositoryPG:
                         source_order_id,
                     ),
                 )
+
+    @staticmethod
+    def clear_driver(source_order_id: str):
+
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+
+                cur.execute(
+                    """
+                    UPDATE orders
+                    SET
+                        driver_id = NULL,
+                        driver_lat = NULL,
+                        driver_lng = NULL,
+                        driver_last_seen_at = NULL
+                    WHERE source_order_id = %s
+                    """,
+                    (source_order_id,)
+                )

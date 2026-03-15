@@ -55,6 +55,8 @@ def normalize_shipday_client_status(payload: Dict[str, Any]) -> Optional[str]:
         "ORDER_FAILED": "failed",
         "ORDER_CANCELLED": "cancelled",
         "ORDER_CANCELED": "cancelled",
+        "DRIVER_UNASSIGNED": "created",
+        "ORDER_UNASSIGNED": "created",
     }
 
     if event in event_mapping:
@@ -151,6 +153,14 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
         pass
 
     raw_event = str(payload.get("event") or "").upper()
+    if raw_event in {"DRIVER_UNASSIGNED", "ORDER_UNASSIGNED"}:
+
+        OrderRepositoryPG.clear_driver(source_order_id)
+
+        OrderRepositoryPG.update_status(
+            source_order_id,
+            "created"
+        )
     event_type = f"shipday.client.{raw_event.lower()}" if raw_event else "shipday.client.received"
 
     EventRepositoryPG.append(
