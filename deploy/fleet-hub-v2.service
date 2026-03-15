@@ -1,0 +1,23 @@
+[Unit]
+Description=Fleet Hub V2 - Order Dispatch Hub
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=fleet
+Group=fleet
+WorkingDirectory=/home/fleet/fleet-webhooks-v2
+Environment=DATABASE_URL=postgresql://fleet_user:TON_MDP@localhost/fleet_hub
+Environment=FLEET_WEBHOOK_TOKEN=FleetShipdaySecureToken2026
+Environment=SHIPDAY_TOKEN=ton-shipday-token
+Environment=PORT=8002
+Environment=LOG_LEVEL=INFO
+ExecStart=/home/fleet/fleet-webhooks-v2/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
