@@ -146,6 +146,32 @@ async def get_order_details(shipday_api_key: str, order_number: str) -> Dict[str
             "status": response.status_code,
             "response": data,
         }
+    
+async def assign_order_to_driver(
+    shipday_api_key: str,
+    shipday_order_id: str | int,
+    carrier_id: str | int,
+) -> Dict[str, Any]:
+    headers = {
+        "Authorization": f"Basic {shipday_api_key}",
+        "Accept": "application/json",
+    }
+    timeout = httpx.Timeout(15.0, connect=10.0)
+    url = f"{SHIPDAY_ORDERS_URL}/assign/{shipday_order_id}/{carrier_id}"
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        response = await client.put(url, headers=headers)
+
+        try:
+            data = response.json()
+        except Exception:
+            data = {"raw": response.text}
+
+        return {
+            "ok": response.status_code < 400,
+            "status": response.status_code,
+            "response": data,
+        }
 
 
 def extract_tracking_fields_from_order_details(response: Any) -> Dict[str, Any]:
