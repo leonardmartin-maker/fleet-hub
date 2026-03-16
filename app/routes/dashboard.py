@@ -35,8 +35,8 @@ def dashboard(request: Request):
 def create_restaurant(
     tenant_id: str = Form(...),
     restaurant_name: str = Form(...),
-    justeat_restaurant_id: str = Form(...),
-    justeat_webhook_token: str = Form(...),
+    justeat_restaurant_id: str = Form(""),
+    justeat_webhook_token: str = Form(""),
     shipday_api_key: str = Form(...),
     shipday_webhook_token: str = Form(""),
     restaurant_address: str = Form(...),
@@ -62,11 +62,14 @@ def create_restaurant(
             status_code=303,
         )
 
+    # At least one platform must be configured
+    if not justeat_restaurant_id and not jet_connect_pos_location_id:
+        return RedirectResponse(
+            url="/dashboard?error=no_platform",
+            status_code=303,
+        )
+
     data = {
-        "justeat": {
-            "restaurant_id": justeat_restaurant_id,
-            "webhook_token": justeat_webhook_token,
-        },
         "shipday": {
             "api_key": shipday_api_key,
             "webhook_token": shipday_webhook_token,
@@ -79,6 +82,20 @@ def create_restaurant(
         "enabled": True,
     }
 
+    # JustEat Legacy (UK) config — optional
+    if justeat_restaurant_id:
+        data["justeat"] = {
+            "restaurant_id": justeat_restaurant_id,
+            "webhook_token": justeat_webhook_token,
+        }
+
+        existing_je = TenantRepositoryPG.find_by_justeat_restaurant_id(justeat_restaurant_id)
+        if existing_je:
+            return RedirectResponse(
+                url="/dashboard?error=justeat_exists",
+                status_code=303,
+            )
+
     # JET Connect (eat.ch) config — optional
     if jet_connect_pos_location_id:
         data["jet_connect"] = {
@@ -88,7 +105,6 @@ def create_restaurant(
             "base_url": "https://ch-partnerapi.just-eat.io",
         }
 
-        # Check for duplicate JET Connect location
         existing_jc = TenantRepositoryPG.find_by_jet_connect_location_id(jet_connect_pos_location_id)
         if existing_jc:
             return RedirectResponse(
@@ -100,14 +116,7 @@ def create_restaurant(
     if existing_tenant:
         return RedirectResponse(
             url="/dashboard?error=tenant_exists",
-            status_code=303
-        )
-
-    existing_jet = TenantRepositoryPG.find_by_justeat_restaurant_id(justeat_restaurant_id)
-    if existing_jet:
-        return RedirectResponse(
-            url="/dashboard?error=justeat_exists",
-            status_code=303
+            status_code=303,
         )
 
     TenantRepositoryPG.upsert(
@@ -116,7 +125,7 @@ def create_restaurant(
         data=data,
     )
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url="/dashboard?success=restaurant_created", status_code=303)
 
 @router.get("/dashboard/restaurants/{tenant_id}/edit", response_class=HTMLResponse)
 def edit_restaurant(request: Request, tenant_id: str):
@@ -136,36 +145,45 @@ async def update_restaurant(
     tenant_id: str,
     request: Request,
     restaurant_name: str = Form(...),
-    justeat_restaurant_id: str = Form(...),
-    justeat_webhook_token: str = Form(...),
+    justeat_restaurant_id: str = Form(""),
+    justeat_webhook_token: str = Form(""),
     shipday_api_key: str = Form(""),
     restaurant_address: str = Form(...),
-    restaurant_phone: str = Form(...),
+    restaurant_phone: str = Form(""),
     jet_connect_pos_location_id: str = Form(""),
     jet_connect_hmac_secret: str = Form(""),
     jet_connect_api_key: str = Form(""),
 ):
+    existing = TenantRepositoryPG.get(tenant_id)
 
     data = {
-        "justeat": {
-            "restaurant_id": justeat_restaurant_id,
-            "webhook_token": justeat_webhook_token,
-        },
         "shipday": {},
         "defaults": {
             "restaurantName": restaurant_name,
             "restaurantAddress": restaurant_address,
             "restaurantPhoneNumber": restaurant_phone,
-        }
+        },
     }
 
-    # on garde la clé existante si champ vide
-    existing = TenantRepositoryPG.get(tenant_id)
-
+    # Shipday — preserve existing key if field left blank
     if shipday_api_key:
         data["shipday"]["api_key"] = shipday_api_key
     else:
-        data["shipday"]["api_key"] = existing["shipday"]["api_key"]
+        data["shipday"]["api_key"] = (existing.get("shipday") or {}).get("api_key", "")
+
+    # Preserve existing shipday webhook token
+    existing_shipday_token = (existing.get("shipday") or {}).get("webhook_token", "")
+    data["shipday"]["webhook_token"] = existing_shipday_token
+
+    # JustEat Legacy (UK) — preserve existing values if fields left blank
+    existing_je = (existing or {}).get("justeat") or {}
+    je_restaurant_id = justeat_restaurant_id.strip() or existing_je.get("restaurant_id", "")
+
+    if je_restaurant_id:
+        data["justeat"] = {
+            "restaurant_id": je_restaurant_id,
+            "webhook_token": justeat_webhook_token.strip() or existing_je.get("webhook_token", ""),
+        }
 
     # JET Connect (eat.ch) — preserve existing secrets if fields left blank
     existing_jc = (existing or {}).get("jet_connect") or {}
@@ -182,12 +200,12 @@ async def update_restaurant(
     TenantRepositoryPG.upsert(
         tenant_id,
         restaurant_name,
-        data
+        data,
     )
 
     return RedirectResponse(
         url="/dashboard?success=restaurant_updated",
-        status_code=303
+        status_code=303,
     )
 
 

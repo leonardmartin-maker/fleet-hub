@@ -2,50 +2,186 @@
 <html>
 <head>
 <title>Edit Restaurant</title>
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        margin:0;
+        background:#f6f8fb;
+    }
+
+    header{
+        background:white;
+        border-bottom:1px solid #ddd;
+        padding:16px 24px;
+    }
+
+    .title{
+        font-size:22px;
+        font-weight:bold;
+    }
+
+    .nav{
+        margin-top:8px;
+    }
+
+    .nav a{
+        margin-right:20px;
+        text-decoration:none;
+        color:#333;
+        font-weight:bold;
+    }
+
+    .container{
+        padding:30px;
+        max-width:800px;
+    }
+
+    .card{
+        background:white;
+        padding:20px;
+        border-radius:8px;
+        box-shadow:0 2px 6px rgba(0,0,0,0.05);
+        margin-bottom:30px;
+    }
+
+    .form-grid{
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap:14px;
+        margin-top:16px;
+    }
+
+    .form-field label{
+        display:block;
+        font-size:13px;
+        font-weight:bold;
+        color:#374151;
+        margin-bottom:6px;
+    }
+
+    .form-field input{
+        width:100%;
+        box-sizing:border-box;
+        padding:10px 12px;
+        border:1px solid #d1d5db;
+        border-radius:6px;
+        font-size:14px;
+        background:white;
+    }
+
+    .btn{
+        background:#2563eb;
+        color:white;
+        border:none;
+        padding:10px 14px;
+        border-radius:6px;
+        cursor:pointer;
+        font-weight:bold;
+    }
+
+    .btn:hover{
+        opacity:0.95;
+    }
+
+    .muted{
+        color:#666;
+        font-size:14px;
+    }
+
+    .section-title{
+        margin-top:24px;
+        color:#374151;
+    }
+
+    .section-hint{
+        font-size:12px;
+        color:#999;
+        font-weight:normal;
+    }
+</style>
 </head>
 
 <body>
 
-<h2>Edit Restaurant {{ tenant.tenantId }}</h2>
+<header>
+    <div class="title">Fleet Hub</div>
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/tracking">Live Map</a>
+    </div>
+</header>
 
-<form method="post">
+<div class="container">
+    <div class="card">
+        <h2>Edit Restaurant — {{ tenant.tenantId }}</h2>
 
-<label>Restaurant name</label><br>
-<input name="restaurant_name" value="{{ tenant.restaurantName }}"><br><br>
+        <form method="post">
 
-<label>JustEat restaurant ID</label><br>
-<input name="justeat_restaurant_id" value="{{ tenant.justeat.restaurant_id }}"><br><br>
+            <h3 class="section-title" style="margin-top:8px;">General</h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>Restaurant name</label>
+                    <input name="restaurant_name" value="{{ tenant.restaurantName }}">
+                </div>
 
-<label>JustEat webhook token</label><br>
-<input name="justeat_webhook_token" value="{{ tenant.justeat.webhook_token }}"><br><br>
+                <div class="form-field">
+                    <label>Restaurant address</label>
+                    <input name="restaurant_address" value="{{ tenant.defaults.restaurantAddress }}">
+                </div>
 
-<label>Shipday API key (leave blank to keep current)</label><br>
-<input name="shipday_api_key"><br><br>
+                <div class="form-field">
+                    <label>Restaurant phone</label>
+                    <input name="restaurant_phone" value="{{ tenant.defaults.restaurantPhoneNumber }}">
+                </div>
+            </div>
 
-<label>Shipday webhook token</label><br>
-<input name="shipday_webhook_token" value="{{ tenant.shipday.webhook_token or '' }}"><br><br>
+            <h3 class="section-title">Shipday <span class="section-hint">dispatch & tracking</span></h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>Shipday API key (leave blank to keep current)</label>
+                    <input name="shipday_api_key" placeholder="Leave blank to keep current">
+                </div>
+            </div>
 
-<label>Restaurant address</label><br>
-<input name="restaurant_address" value="{{ tenant.defaults.restaurantAddress }}"><br><br>
+            <h3 class="section-title">JustEat Legacy (UK) <span class="section-hint">optionnel</span></h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>Restaurant ID</label>
+                    <input name="justeat_restaurant_id" value="{{ (tenant.justeat or {}).get('restaurant_id', '') }}">
+                </div>
 
-<label>Restaurant phone</label><br>
-<input name="restaurant_phone" value="{{ tenant.defaults.restaurantPhoneNumber }}"><br><br>
+                <div class="form-field">
+                    <label>Webhook token (leave blank to keep current)</label>
+                    <input name="justeat_webhook_token" placeholder="Leave blank to keep current">
+                </div>
+            </div>
 
-<hr style="margin:20px 0;">
-<h3>JET Connect (eat.ch) <span style="font-size:12px;color:#999;font-weight:normal;">optionnel</span></h3>
+            <h3 class="section-title">JET Connect (eat.ch) <span class="section-hint">optionnel</span></h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>POS Location ID</label>
+                    <input name="jet_connect_pos_location_id" value="{{ (tenant.jet_connect or {}).get('pos_location_id', '') }}">
+                </div>
 
-<label>POS Location ID</label><br>
-<input name="jet_connect_pos_location_id" value="{{ (tenant.jet_connect or {}).get('pos_location_id', '') }}"><br><br>
+                <div class="form-field">
+                    <label>HMAC Secret (leave blank to keep current)</label>
+                    <input name="jet_connect_hmac_secret" type="password" placeholder="Leave blank to keep current">
+                </div>
 
-<label>HMAC Secret (leave blank to keep current)</label><br>
-<input name="jet_connect_hmac_secret" type="password"><br><br>
+                <div class="form-field">
+                    <label>API Key (X-Flyt-Api-Key, leave blank to keep current)</label>
+                    <input name="jet_connect_api_key" placeholder="Leave blank to keep current">
+                </div>
+            </div>
 
-<label>API Key (X-Flyt-Api-Key, leave blank to keep current)</label><br>
-<input name="jet_connect_api_key" value=""><br><br>
+            <div style="margin-top:20px;">
+                <button class="btn" type="submit">Save</button>
+                <a href="/dashboard" style="margin-left:12px;color:#666;text-decoration:none;">Cancel</a>
+            </div>
 
-<button type="submit">Save</button>
-
-</form>
+        </form>
+    </div>
+</div>
 
 </body>
 </html>

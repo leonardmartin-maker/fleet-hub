@@ -190,11 +190,19 @@ JET Connect POS Location ID already connected to another restaurant
 </div>
 {% endif %}
 
+    {% if error == "no_platform" %}
+<div style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:8px;margin-bottom:20px;">
+    At least one platform must be configured (JustEat legacy or JET Connect)
+</div>
+{% endif %}
+
     <div class="card">
         <h2>Add Restaurant</h2>
         <p class="muted">Créer un tenant restaurant directement depuis le dashboard.</p>
 
         <form action="/dashboard/restaurants/create" method="post">
+
+            <h3 style="margin-top:8px; color:#374151;">General</h3>
             <div class="form-grid">
                 <div class="form-field">
                     <label for="tenant_id">Tenant ID</label>
@@ -207,15 +215,18 @@ JET Connect POS Location ID already connected to another restaurant
                 </div>
 
                 <div class="form-field">
-                    <label for="justeat_restaurant_id">Just Eat restaurant ID</label>
-                    <input id="justeat_restaurant_id" type="text" name="justeat_restaurant_id" placeholder="123456" required>
+                    <label for="restaurant_address">Restaurant address</label>
+                    <input id="restaurant_address" type="text" name="restaurant_address" placeholder="Rue du Lac 14, 1007 Lausanne" required>
                 </div>
 
                 <div class="form-field">
-                    <label for="justeat_webhook_token">Just Eat webhook token</label>
-                    <input id="justeat_webhook_token" type="text" name="justeat_webhook_token" placeholder="JustEatToHubToken_xxx" required>
+                    <label for="restaurant_phone">Restaurant phone</label>
+                    <input id="restaurant_phone" type="text" name="restaurant_phone" placeholder="+41789415042">
                 </div>
+            </div>
 
+            <h3 style="margin-top:24px; color:#374151;">Shipday <span style="font-size:12px;color:#999;font-weight:normal;">dispatch & tracking</span></h3>
+            <div class="form-grid">
                 <div class="form-field">
                     <label for="shipday_api_key">Shipday API key</label>
                     <input id="shipday_api_key" type="text" name="shipday_api_key" placeholder="Shipday API key" required>
@@ -225,15 +236,18 @@ JET Connect POS Location ID already connected to another restaurant
                     <label for="shipday_webhook_token">Shipday webhook token</label>
                     <input id="shipday_webhook_token" type="text" name="shipday_webhook_token" placeholder="Shipday webhook token">
                 </div>
+            </div>
 
+            <h3 style="margin-top:24px; color:#374151;">JustEat Legacy (UK) <span style="font-size:12px;color:#999;font-weight:normal;">optionnel</span></h3>
+            <div class="form-grid">
                 <div class="form-field">
-                    <label for="restaurant_address">Restaurant address</label>
-                    <input id="restaurant_address" type="text" name="restaurant_address" placeholder="Rue du Lac 14, 1007 Lausanne" required>
+                    <label for="justeat_restaurant_id">Restaurant ID</label>
+                    <input id="justeat_restaurant_id" type="text" name="justeat_restaurant_id" placeholder="123456">
                 </div>
 
                 <div class="form-field">
-                    <label for="restaurant_phone">Restaurant phone</label>
-                    <input id="restaurant_phone" type="text" name="restaurant_phone" placeholder="+41789415042">
+                    <label for="justeat_webhook_token">Webhook token</label>
+                    <input id="justeat_webhook_token" type="text" name="justeat_webhook_token" placeholder="JustEatToHubToken_xxx">
                 </div>
             </div>
 
