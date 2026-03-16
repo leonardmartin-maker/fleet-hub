@@ -2,16 +2,26 @@ from fastapi import APIRouter
 import httpx
 
 from app.config import SHIPDAY_TOKEN
+from app.repositories.fleets_pg import FleetRepositoryPG
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.services.dispatch import suggest_best_driver
 
 router = APIRouter()
 
 
+def _get_shipday_token() -> str:
+    """Get Shipday API token from DB (preferred) or env var (fallback)."""
+    fleet = FleetRepositoryPG.get_default()
+    if fleet:
+        return fleet.get("shipday_token", "") or ""
+    return SHIPDAY_TOKEN
+
+
 async def fetch_drivers():
+    token = _get_shipday_token()
     url = "https://api.shipday.com/drivers"
     headers = {
-        "Authorization": f"Bearer {SHIPDAY_TOKEN}"
+        "Authorization": f"Bearer {token}"
     }
 
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -57,8 +67,9 @@ async def dispatch_assign(order_id: str, driver_id: str):
 
     url = f"https://api.shipday.com/orders/{shipday_order_id}/assign"
 
+    token = _get_shipday_token()
     headers = {
-        "Authorization": f"Bearer {SHIPDAY_TOKEN}"
+        "Authorization": f"Bearer {token}"
     }
 
     payload = {

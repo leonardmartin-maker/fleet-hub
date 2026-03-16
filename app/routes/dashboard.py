@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.repositories.fleets_pg import FleetRepositoryPG
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.repositories.tenants_pg import TenantRepositoryPG
 from app.services.order_state import build_order_view
@@ -15,6 +16,7 @@ def dashboard(request: Request):
 
     tenants = TenantRepositoryPG.list()
     orders = OrderRepositoryPG.list()
+    fleets = FleetRepositoryPG.list()
 
     error = request.query_params.get("error")
     success = request.query_params.get("success")
@@ -25,6 +27,7 @@ def dashboard(request: Request):
             "request": request,
             "tenants": tenants,
             "orders": orders,
+            "fleets": fleets,
             "error": error,
             "success": success,
         },
@@ -243,3 +246,49 @@ def delete_restaurant(tenant_id: str):
     TenantRepositoryPG.delete(tenant_id)
 
     return RedirectResponse(url="/dashboard?success=restaurant_deleted", status_code=303)
+
+
+# ── Fleet routes ─────────────────────────────────────────────────────
+
+
+@router.post("/dashboard/fleets/save")
+def save_fleet(
+    fleet_id: str = Form(...),
+    fleet_name: str = Form(...),
+    shipday_token: str = Form(""),
+    fleet_webhook_token: str = Form(""),
+):
+    fleet_id = fleet_id.strip().lower()
+    fleet_name = fleet_name.strip()
+    shipday_token = shipday_token.strip()
+    fleet_webhook_token = fleet_webhook_token.strip()
+
+    # Preserve existing secrets if fields left blank (update case)
+    existing = FleetRepositoryPG.get(fleet_id)
+    if existing:
+        shipday_token = shipday_token or existing.get("shipday_token", "")
+        fleet_webhook_token = fleet_webhook_token or existing.get("fleet_webhook_token", "")
+
+    data = {
+        "shipday_token": shipday_token,
+        "fleet_webhook_token": fleet_webhook_token,
+    }
+
+    FleetRepositoryPG.upsert(
+        fleet_id=fleet_id,
+        fleet_name=fleet_name,
+        data=data,
+    )
+
+    return RedirectResponse(url="/dashboard?success=fleet_saved", status_code=303)
+
+
+@router.post("/dashboard/fleets/{fleet_id}/delete")
+def delete_fleet(fleet_id: str):
+    fleet = FleetRepositoryPG.get(fleet_id)
+    if not fleet:
+        return RedirectResponse(url="/dashboard?error=fleet_not_found", status_code=303)
+
+    FleetRepositoryPG.delete(fleet_id)
+
+    return RedirectResponse(url="/dashboard?success=fleet_deleted", status_code=303)

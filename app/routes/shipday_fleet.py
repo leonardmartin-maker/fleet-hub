@@ -4,19 +4,29 @@ from fastapi.responses import JSONResponse
 
 from app.config import FLEET_WEBHOOK_TOKEN, logger
 from app.repositories.events_pg import EventRepositoryPG
+from app.repositories.fleets_pg import FleetRepositoryPG
 from app.repositories.orders_pg import OrderRepositoryPG
 from app.utils import now_ts, stable_event_id
 
 router = APIRouter()
 
 
+def _get_fleet_webhook_token() -> str:
+    """Get fleet webhook token from DB (preferred) or env var (fallback)."""
+    fleet = FleetRepositoryPG.get_default()
+    if fleet:
+        return fleet.get("fleet_webhook_token", "") or ""
+    return FLEET_WEBHOOK_TOKEN
+
+
 def require_shipday_fleet_token(request: Request) -> None:
+    expected = _get_fleet_webhook_token()
     incoming = (
         request.headers.get("x-hub-token")
         or request.headers.get("authorization")
         or ""
     )
-    if FLEET_WEBHOOK_TOKEN and incoming != FLEET_WEBHOOK_TOKEN:
+    if expected and incoming != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 

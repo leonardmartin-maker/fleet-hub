@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import logger
 from app.db import pool
+from app.repositories.fleets_pg import FleetRepositoryPG
 from app.workers.retry_worker import retry_worker
 
 from app.routes.platform import router as platform_router
@@ -23,6 +24,7 @@ from app.routes.jet_connect import router as jet_connect_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Fleet Hub starting up")
+    FleetRepositoryPG.ensure_table()
     task = asyncio.create_task(retry_worker())
     yield
     task.cancel()
