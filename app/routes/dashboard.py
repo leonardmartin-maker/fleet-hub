@@ -41,6 +41,9 @@ def create_restaurant(
     shipday_webhook_token: str = Form(""),
     restaurant_address: str = Form(...),
     restaurant_phone: str = Form(""),
+    jet_connect_pos_location_id: str = Form(""),
+    jet_connect_hmac_secret: str = Form(""),
+    jet_connect_api_key: str = Form(""),
 ):
     tenant_id = tenant_id.strip().lower()
     restaurant_name = restaurant_name.strip()
@@ -49,6 +52,9 @@ def create_restaurant(
     shipday_api_key = shipday_api_key.strip()
     restaurant_address = restaurant_address.strip()
     restaurant_phone = restaurant_phone.strip()
+    jet_connect_pos_location_id = jet_connect_pos_location_id.strip()
+    jet_connect_hmac_secret = jet_connect_hmac_secret.strip()
+    jet_connect_api_key = jet_connect_api_key.strip()
 
     if not shipday_api_key:
         return RedirectResponse(
@@ -72,6 +78,23 @@ def create_restaurant(
         },
         "enabled": True,
     }
+
+    # JET Connect (eat.ch) config — optional
+    if jet_connect_pos_location_id:
+        data["jet_connect"] = {
+            "pos_location_id": jet_connect_pos_location_id,
+            "hmac_secret": jet_connect_hmac_secret,
+            "api_key": jet_connect_api_key,
+            "base_url": "https://ch-partnerapi.just-eat.io",
+        }
+
+        # Check for duplicate JET Connect location
+        existing_jc = TenantRepositoryPG.find_by_jet_connect_location_id(jet_connect_pos_location_id)
+        if existing_jc:
+            return RedirectResponse(
+                url="/dashboard?error=jet_connect_exists",
+                status_code=303,
+            )
 
     existing_tenant = TenantRepositoryPG.get(tenant_id)
     if existing_tenant:
@@ -117,7 +140,10 @@ async def update_restaurant(
     justeat_webhook_token: str = Form(...),
     shipday_api_key: str = Form(""),
     restaurant_address: str = Form(...),
-    restaurant_phone: str = Form(...)
+    restaurant_phone: str = Form(...),
+    jet_connect_pos_location_id: str = Form(""),
+    jet_connect_hmac_secret: str = Form(""),
+    jet_connect_api_key: str = Form(""),
 ):
 
     data = {
@@ -140,6 +166,18 @@ async def update_restaurant(
         data["shipday"]["api_key"] = shipday_api_key
     else:
         data["shipday"]["api_key"] = existing["shipday"]["api_key"]
+
+    # JET Connect (eat.ch) — preserve existing secrets if fields left blank
+    existing_jc = (existing or {}).get("jet_connect") or {}
+    jc_pos_id = jet_connect_pos_location_id.strip() or existing_jc.get("pos_location_id", "")
+
+    if jc_pos_id:
+        data["jet_connect"] = {
+            "pos_location_id": jc_pos_id,
+            "hmac_secret": jet_connect_hmac_secret.strip() or existing_jc.get("hmac_secret", ""),
+            "api_key": jet_connect_api_key.strip() or existing_jc.get("api_key", ""),
+            "base_url": existing_jc.get("base_url", "https://ch-partnerapi.just-eat.io"),
+        }
 
     TenantRepositoryPG.upsert(
         tenant_id,

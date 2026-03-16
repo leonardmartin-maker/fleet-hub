@@ -96,6 +96,99 @@ class ShipdayClientWebhookPayload(BaseModel):
 
 # ── Shipday Fleet webhook ────────────────────────────────────────────
 
+# ── JET Connect webhook (eat.ch) ────────────────────────────────────
+
+class JetConnectCoordinates(BaseModel):
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class JetConnectAddress(BaseModel):
+    model_config = {"extra": "allow"}
+
+    line_one: Optional[str] = Field(None, alias="line1")
+    line_two: Optional[str] = Field(None, alias="line2")
+    city: Optional[str] = None
+    postcode: Optional[str] = None
+    coordinates: Optional[JetConnectCoordinates] = None
+
+
+class JetConnectPerson(BaseModel):
+    model_config = {"extra": "allow"}
+
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    phone_masking_code: Optional[str] = None
+    email: Optional[str] = None
+    coordinates: Optional[JetConnectCoordinates] = None
+
+
+class JetConnectDelivery(BaseModel):
+    model_config = {"extra": "allow"}
+
+    address: Optional[JetConnectAddress] = None
+    deliver_at: Optional[str] = None
+    delivery_notes: Optional[str] = None
+
+
+class JetConnectPrice(BaseModel):
+    inc_tax: Optional[int] = None  # minor units (rappen/pence)
+    tax: Optional[int] = None
+
+
+class JetConnectItemPrice(BaseModel):
+    inc_tax: Optional[int] = None
+
+
+class JetConnectItem(BaseModel):
+    model_config = {"extra": "allow"}
+
+    name: Optional[str] = None
+    plu: Optional[str] = None
+    quantity: Optional[int] = 1
+    price: Optional[JetConnectItemPrice] = None
+
+
+class JetConnectPayment(BaseModel):
+    model_config = {"extra": "allow"}
+
+    items_in_cart: Optional[JetConnectPrice] = None
+    final: Optional[JetConnectPrice] = None
+    adjustments: Optional[List[Dict[str, Any]]] = None
+    deposit: Optional[int] = None
+
+
+class JetConnectLocation(BaseModel):
+    id: Optional[str] = None
+    timezone: Optional[str] = None
+
+
+class JetConnectOrderPayload(BaseModel):
+    model_config = {"extra": "allow"}
+
+    id: str  # UUID from JET Connect
+    third_party_order_reference: Optional[str] = None
+    type: Optional[str] = None  # delivery-by-merchant, delivery-by-delivery-partner, collection-by-customer
+    posLocationId: Optional[str] = None
+    location: Optional[JetConnectLocation] = None
+    items: Optional[List[JetConnectItem]] = None
+    created_at: Optional[str] = None
+    deliver_at: Optional[str] = None
+    collect_at: Optional[str] = None
+    delivery_notes: Optional[str] = None
+    kitchen_notes: Optional[str] = None
+    payment_method: Optional[str] = None  # CARD, CASH
+    payment: Optional[JetConnectPayment] = None
+    delivery: Optional[JetConnectPerson] = None  # delivery person/address info
+    driver: Optional[Dict[str, Any]] = None
+    collector: Optional[Dict[str, Any]] = None
+    promotions: Optional[List[Dict[str, Any]]] = None
+    extras: Optional[Dict[str, Any]] = None
+
+
+# ── Shipday Fleet webhook ────────────────────────────────────────────
+
 class ShipdayDriverLocation(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None

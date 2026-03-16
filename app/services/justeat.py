@@ -7,11 +7,18 @@ from app.utils import iso_utc_now
 
 
 def jet_headers(tenant: Dict[str, Any]) -> Dict[str, str]:
+    """Build auth headers for JET API calls.
+
+    Checks both legacy justeat config and jet_connect config for the API key.
+    """
     justeat = tenant.get("justeat") or {}
-    api_key = justeat.get("api_key")
+    jc = tenant.get("jet_connect") or {}
+
+    # Prefer jet_connect api_key, fallback to legacy justeat api_key
+    api_key = jc.get("api_key") or justeat.get("api_key")
     application = justeat.get("application", "fleet-hub/1.0")
     if not api_key:
-        raise HTTPException(status_code=422, detail="Tenant missing justeat.api_key")
+        raise HTTPException(status_code=422, detail="Tenant missing api_key (justeat or jet_connect)")
 
     return {
         "X-Flyt-Api-Key": api_key,
@@ -65,8 +72,9 @@ async def put_deliverystate(
     order_id: str,
     state: str,
     body: Dict[str, Any],
+    base_url: Optional[str] = None,
 ) -> Dict[str, Any]:
-    url = f"{JET_BASE_URL}/orders/{order_id}/deliverystate/{state}"
+    url = f"{base_url or JET_BASE_URL}/orders/{order_id}/deliverystate/{state}"
     headers = jet_headers(tenant)
     timeout = httpx.Timeout(15.0, connect=10.0)
 

@@ -67,11 +67,15 @@ async def shipday_webhook_tenant(tenant_id: str, request: Request):
             lng=lng,
         )
 
+        # Use tenant-specific base URL if JET Connect is configured
+        tenant_base_url = (tenant.get("jet_connect") or {}).get("base_url")
+
         jet_result = await put_deliverystate(
             tenant=tenant,
             order_id=order_id,
             state=jet_state,
             body=jet_body,
+            base_url=tenant_base_url,
         )
 
         event_type = "justeat.status.sent" if jet_result["ok"] else "justeat.status.failed"

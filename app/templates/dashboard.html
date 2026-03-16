@@ -184,6 +184,12 @@ Just Eat restaurant already connected
 </div>
 {% endif %}
 
+{% if error == "jet_connect_exists" %}
+<div style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:8px;margin-bottom:20px;">
+JET Connect POS Location ID already connected to another restaurant
+</div>
+{% endif %}
+
     <div class="card">
         <h2>Add Restaurant</h2>
         <p class="muted">Créer un tenant restaurant directement depuis le dashboard.</p>
@@ -231,6 +237,24 @@ Just Eat restaurant already connected
                 </div>
             </div>
 
+            <h3 style="margin-top:24px; color:#374151;">JET Connect (eat.ch) <span style="font-size:12px;color:#999;font-weight:normal;">optionnel</span></h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="jet_connect_pos_location_id">POS Location ID</label>
+                    <input id="jet_connect_pos_location_id" type="text" name="jet_connect_pos_location_id" placeholder="abc-123-def">
+                </div>
+
+                <div class="form-field">
+                    <label for="jet_connect_hmac_secret">HMAC Secret</label>
+                    <input id="jet_connect_hmac_secret" type="password" name="jet_connect_hmac_secret" placeholder="Shared secret from JET">
+                </div>
+
+                <div class="form-field">
+                    <label for="jet_connect_api_key">API Key (X-Flyt-Api-Key)</label>
+                    <input id="jet_connect_api_key" type="text" name="jet_connect_api_key" placeholder="JET Connect API key">
+                </div>
+            </div>
+
             <div class="form-actions">
                 <button class="btn" type="submit">Create Restaurant</button>
             </div>
@@ -244,6 +268,7 @@ Just Eat restaurant already connected
             <tr>
                 <th>Tenant</th>
                 <th>Restaurant</th>
+                <th>Platforms</th>
                 <th>Enabled</th>
                 <th>Actions</th>
             </tr>
@@ -252,6 +277,14 @@ Just Eat restaurant already connected
             <tr>
     <td>{{ t.tenantId }}</td>
     <td>{{ t.restaurantName }}</td>
+    <td style="white-space:nowrap;">
+        {% if t.justeat and t.justeat.restaurant_id %}
+        <span style="background:#fff7ed;color:#c2410c;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;margin-right:4px;">JustEat</span>
+        {% endif %}
+        {% if t.jet_connect and t.jet_connect.pos_location_id %}
+        <span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;margin-right:4px;">eat.ch</span>
+        {% endif %}
+    </td>
     <td>
         {% if t.enabled is not defined or t.enabled %}
         <span style="

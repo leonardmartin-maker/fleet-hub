@@ -17,6 +17,7 @@ from app.routes.drivers import router as drivers_router
 from app.routes.dispatch import router as dispatch_router
 from app.routes.shipday_client import router as shipday_client_router
 from app.routes.shipday_fleet import router as shipday_fleet_router
+from app.routes.jet_connect import router as jet_connect_router
 
 
 @asynccontextmanager
@@ -50,3 +51,4 @@ app.include_router(drivers_router)
 app.include_router(dispatch_router)
 app.include_router(shipday_client_router)
 app.include_router(shipday_fleet_router)
+app.include_router(jet_connect_router)

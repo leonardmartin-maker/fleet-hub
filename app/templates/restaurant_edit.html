@@ -31,6 +31,18 @@
 <label>Restaurant phone</label><br>
 <input name="restaurant_phone" value="{{ tenant.defaults.restaurantPhoneNumber }}"><br><br>
 
+<hr style="margin:20px 0;">
+<h3>JET Connect (eat.ch) <span style="font-size:12px;color:#999;font-weight:normal;">optionnel</span></h3>
+
+<label>POS Location ID</label><br>
+<input name="jet_connect_pos_location_id" value="{{ (tenant.jet_connect or {}).get('pos_location_id', '') }}"><br><br>
+
+<label>HMAC Secret (leave blank to keep current)</label><br>
+<input name="jet_connect_hmac_secret" type="password"><br><br>
+
+<label>API Key (X-Flyt-Api-Key, leave blank to keep current)</label><br>
+<input name="jet_connect_api_key" value=""><br><br>
+
 <button type="submit">Save</button>
 
 </form>

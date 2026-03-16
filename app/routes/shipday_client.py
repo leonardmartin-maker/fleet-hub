@@ -181,11 +181,15 @@ async def shipday_client_webhook(tenant_id: str, request: Request):
                     lng=None,
                 )
 
+                # Use tenant-specific base URL if JET Connect is configured
+                tenant_base_url = (tenant.get("jet_connect") or {}).get("base_url")
+
                 jet_result = await put_deliverystate(
                     tenant=tenant,
                     order_id=source_order_id,
                     state=jet_state,
                     body=jet_body,
+                    base_url=tenant_base_url,
                 )
 
                 EventRepositoryPG.append(

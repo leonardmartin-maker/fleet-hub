@@ -25,6 +25,7 @@ DATABASE_URL = os.getenv(
 SHIPDAY_ORDERS_URL = "https://api.shipday.com/orders"
 SHIPDAY_TOKEN = os.getenv("SHIPDAY_TOKEN", "")
 JET_BASE_URL = "https://uk-partnerapi.just-eat.io"
+JET_CONNECT_BASE_URL = os.getenv("JET_CONNECT_BASE_URL", "https://ch-partnerapi.just-eat.io")
 
 # ── Webhook tokens ───────────────────────────────────────────────────
 FLEET_WEBHOOK_TOKEN = os.getenv("FLEET_WEBHOOK_TOKEN", "")
